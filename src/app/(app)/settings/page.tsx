@@ -25,8 +25,8 @@ const USERS = [
 ];
 
 const AUDIT_LOG = [
-  { user: "Subhchandan Das", action: "Queried AI: 'Feed Water Pump 2B status'", time: "10:42 AM" },
-  { user: "M. Reddy", action: "Logged maintenance event on 21-FN-301A", time: "09:15 AM" },
+  { user: "Subhchandan Das", action: "Queried AI: 'Boiler Feed Pump-A status'", time: "10:42 AM" },
+  { user: "M. Reddy", action: "Logged maintenance event on ID Fan-A", time: "09:15 AM" },
   { user: "A. Sharma", action: "Submitted safety checklist: Hot Work Permit", time: "08:50 AM" },
   { user: "System", action: "Re-indexed document: BHEL OEM Manual — ID Fan", time: "07:30 AM" },
 ];

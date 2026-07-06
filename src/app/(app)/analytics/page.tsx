@@ -71,9 +71,9 @@ const complianceHistory = [
 ];
 
 const insights = [
-  "ID Fan 3A failure probability is 72% within 30 days based on vibration trend analysis. Similar pattern led to failure on Unit 2 in March 2025.",
-  "Coal handling system SOP compliance dropped from 98% to 91% this month. 3 out of 7 non-compliance events relate to conveyor belt inspection procedures.",
-  "Top maintenance cost driver: Boiler tube repairs (₹2.4 Cr in last 6 months). AI recommends water chemistry optimization — see linked CEA guidelines.",
+  "ID Fan-A failure probability is elevated based on vibration trend analysis. The IJMET 2010 NDT case study on a comparable Cooling System Fan found the same signature (impeller/bearing damage, sheared locking bolt) — recommend an early inspection before SPM readings cross the 35 dBN replace-bearing threshold.",
+  "NTPC Unchahar TPS (2×210 MW) is a useful reliability benchmark from the ADB project completion report: PLF recovered from 84.4% (FY2001) to 91.2% (FY2002) with heat rate improving from 2,473 to 2,464 kcal/kWh — evidence that turnaround maintenance programs measurably move these KPIs within a year.",
+  "Boiler excess O2 best practice (NTPC O&M Best Practices manual) targets 3.5% dry-basis, reducible to 2.5–2.8% with CO monitoring — current readings are trending above this target, indicating a combustion-tuning opportunity.",
 ];
 
 const tooltipStyle = {

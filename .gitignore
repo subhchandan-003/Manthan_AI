@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+.env*.local
+
+# large third-party source PDFs used only as local reference data — not for redistribution
+/ET_sources

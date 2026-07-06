@@ -35,21 +35,21 @@ const CHECKLISTS = [
 
 const HAZARDS = [
   {
-    hazard: "No emergency isolation valve on nitrogen supply to boiler",
-    sheet: "P&ID Sheet 22",
+    hazard: "No emergency isolation valve on Centralised Nitrogen Filling System supply",
+    sheet: "Drg. XXXX-001-POM-A-015B",
     severity: "high" as const,
     category: "Process Safety",
-    recommendation: "Install manual isolation valve before nitrogen injection point per OISD-154",
+    recommendation: "Install manual isolation valve before the nitrogen injection point per OISD STD 106 (Pressure Relief & Disposal System)",
   },
   {
-    hazard: "Superheater tube bank shows signs of erosion-driven thinning",
-    sheet: "P&ID Sheet 10",
+    hazard: "Platen superheater tube bank shows signs of erosion-driven thinning",
+    sheet: "Drg. XXXX-999-POM-A-004",
     severity: "high" as const,
     category: "Mechanical Integrity",
     recommendation: "Schedule ultrasonic thickness survey on adjacent tube banks",
   },
   {
-    hazard: "ID Fan 3A vibration approaching alarm threshold",
+    hazard: "ID Fan-A vibration approaching alarm threshold",
     sheet: "Equipment Register",
     severity: "medium" as const,
     category: "Rotating Equipment",

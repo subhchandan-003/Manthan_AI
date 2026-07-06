@@ -21,14 +21,14 @@ const typeColor: Record<NodeType, string> = {
 };
 
 const NODES: GraphNode[] = [
-  { id: "n1", label: "Main Steam P&ID", type: "document", x: 60, y: 40 },
-  { id: "n2", label: "21-AT-101", type: "equipment", x: 200, y: 30 },
-  { id: "n3", label: "21-FN-301A", type: "equipment", x: 260, y: 110 },
+  { id: "n1", label: "Sipat P&ID Set", type: "document", x: 60, y: 40 },
+  { id: "n2", label: "Attemperator", type: "equipment", x: 200, y: 30 },
+  { id: "n3", label: "ID Fan-A", type: "equipment", x: 260, y: 110 },
   { id: "n4", label: "Main Steam Flow", type: "process", x: 140, y: 110 },
-  { id: "n5", label: "SOP-MS-003", type: "standard", x: 40, y: 150 },
-  { id: "n6", label: "OISD-154", type: "standard", x: 300, y: 40 },
-  { id: "n7", label: "Tube Leak Hazard", type: "safety", x: 200, y: 190 },
-  { id: "n8", label: "Draft System", type: "process", x: 300, y: 170 },
+  { id: "n5", label: "O&M Best Practices", type: "standard", x: 40, y: 150 },
+  { id: "n6", label: "OISD STD 106", type: "standard", x: 300, y: 40 },
+  { id: "n7", label: "Superheater Tube Leak", type: "safety", x: 200, y: 190 },
+  { id: "n8", label: "Air & Flue Gas Path", type: "process", x: 300, y: 170 },
 ];
 
 const EDGES: [string, string][] = [

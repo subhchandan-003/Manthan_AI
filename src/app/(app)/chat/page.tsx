@@ -26,7 +26,7 @@ const FOLLOW_UPS = [
   "What safety precautions apply here?",
 ];
 
-const docTone = { "P&ID": "purple", SOP: "blue", "Maintenance Log": "amber", "Safety Manual": "red", "OEM Manual": "cyan", "Inspection Report": "green" } as const;
+const docTone = { "P&ID": "purple", PFD: "purple", SOP: "blue", "Maintenance Log": "amber", "Safety Manual": "red", "OEM Manual": "cyan", "Inspection Report": "green", "Reference Report": "neutral" } as const;
 
 function findCitedDocs(text: string) {
   return documents.filter((d) => text.includes(d.title) || text.toLowerCase().includes(d.title.toLowerCase().slice(0, 20)));
@@ -260,7 +260,7 @@ function ChatContent() {
           {tab === "pid" && (
             <div className="flex flex-col gap-3">
               <div className="rounded-md border border-border-subtle bg-bg-primary p-3 text-xs text-text-secondary">
-                Main Steam P&ID (Sheet 10 of 47) — last referenced in this conversation.
+                Drg. XXXX-999-POM-A-004 — Main Steam, HRH &amp; CRH P&amp;ID — last referenced in this conversation.
               </div>
               <Link
                 href="/pid-viewer"
@@ -292,7 +292,7 @@ function ChatContent() {
           )}
           {tab === "history" && (
             <div className="flex flex-col gap-2 text-xs">
-              {["Main steam system walkthrough", "ID Fan 3A troubleshooting", "Nitrogen system hazard review"].map(
+              {["Main steam system walkthrough", "ID Fan-A troubleshooting", "Nitrogen system hazard review"].map(
                 (h) => (
                   <div key={h} className="flex items-center gap-2 rounded-md border border-border-subtle p-2.5 hover:bg-bg-tertiary/50">
                     <History className="h-3.5 w-3.5 shrink-0 text-text-muted" />

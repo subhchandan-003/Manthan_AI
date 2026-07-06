@@ -13,20 +13,24 @@ import type { DocumentItem } from "@/lib/types";
 const TYPES: Array<DocumentItem["type"] | "All"> = [
   "All",
   "P&ID",
+  "PFD",
   "SOP",
   "Maintenance Log",
   "Safety Manual",
   "OEM Manual",
   "Inspection Report",
+  "Reference Report",
 ];
 
 const typeTone = {
   "P&ID": "purple",
+  PFD: "purple",
   SOP: "blue",
   "Maintenance Log": "amber",
   "Safety Manual": "red",
   "OEM Manual": "cyan",
   "Inspection Report": "green",
+  "Reference Report": "neutral",
 } as const;
 
 const statusLabel = { indexed: "Indexed ✓", processing: "Processing…", "needs-review": "Needs Review" } as const;
@@ -114,6 +118,7 @@ export default function DocumentsPage() {
                         {d.tagsIdentified ?? 0} equipment tags identified · {d.loopsMapped ?? 0} control loops mapped
                       </p>
                     )}
+                    {d.docNo && <p className="mt-1 font-mono text-[11px] text-text-muted">Ref: {d.docNo}</p>}
                     <p className="mt-1 text-[11px] text-text-muted">Uploaded {d.uploadDate}</p>
                   </div>
                 </div>

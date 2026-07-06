@@ -17,11 +17,13 @@ export interface Alert {
 export interface DocumentItem {
   id: string;
   title: string;
-  type: "P&ID" | "SOP" | "Maintenance Log" | "Safety Manual" | "OEM Manual" | "Inspection Report";
+  type: "P&ID" | "PFD" | "SOP" | "Maintenance Log" | "Safety Manual" | "OEM Manual" | "Inspection Report" | "Reference Report";
   status: "indexed" | "processing" | "needs-review";
   uploadDate: string;
   tagsIdentified?: number;
   loopsMapped?: number;
+  /** Real source document number / tender ref / spec no., where applicable */
+  docNo?: string;
 }
 
 export interface EquipmentItem {

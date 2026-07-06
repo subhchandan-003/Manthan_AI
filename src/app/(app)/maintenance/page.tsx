@@ -22,21 +22,30 @@ const TABS: { key: Tab; label: string }[] = [
 const eventTone = { PM: "green", CM: "amber", Overhaul: "blue", Emergency: "red" } as const;
 
 const SOP_LIBRARY: Record<string, string[]> = {
-  "21-FN-301A": ["SOP-SIPAT-DF-001: ID Fan Start/Stop Procedure", "SOP-SIPAT-DF-003: ID Fan Emergency Trip Response", "SOP-SIPAT-DF-007: Bearing Temperature High — Corrective Action"],
+  "ID Fan-A": [
+    "NTPC O&M Best Practices — Boiler & Turbine Protection Checking (every 3 months)",
+    "NTPC O&M Best Practices — Mill/Draft-system optimisation guidance (Contact: Sh JSS Murty, Boiler Maintenance)",
+  ],
+  "Cooling System Fan": [
+    "IJMET 2010 NDT case study — Cooling System Fan vibration diagnosis & repair procedure",
+  ],
+  "Purge Fan No. 12 (East)": [
+    "IJMET 2010 NDT case study — Purge Fan shaft/SPM diagnosis & repair procedure",
+  ],
 };
 
 const SYMPTOMS = ["High vibration", "High bearing temp", "Abnormal noise", "Low discharge pressure", "High motor current", "Trip event"];
 
 const TROUBLESHOOT_STEPS: Record<string, { instruction: string; sop: string; safety: string }[]> = {
   "High vibration": [
-    { instruction: "Check bearing oil level and quality", sop: "SOP-SIPAT-DF-007", safety: "Ensure fan is isolated per LOTO before opening inspection port" },
-    { instruction: "Verify coupling alignment using dial gauge", sop: "SOP-SIPAT-DF-001", safety: "Wear hearing protection near running equipment" },
-    { instruction: "Inspect fan blade for erosion or deposits", sop: "SOP-SIPAT-DF-007", safety: "Confined space entry permit required if entering fan casing" },
+    { instruction: "Check bearing oil level and quality", sop: "NTPC O&M Best Practices manual", safety: "Ensure fan is isolated per LOTO before opening inspection port" },
+    { instruction: "Verify coupling alignment using dial gauge", sop: "NTPC O&M Best Practices manual", safety: "Wear hearing protection near running equipment" },
+    { instruction: "Check Shock Pulse Meter (SPM) bearing reading against the 20/35 dBN observe/replace thresholds", sop: "IJMET 2010 NDT case study", safety: "Confined space entry permit required if entering fan casing" },
   ],
   "High bearing temp": [
-    { instruction: "Confirm lubrication system flow and pressure", sop: "SOP-SIPAT-DF-007", safety: "Allow bearing housing to cool before manual contact" },
-    { instruction: "Check cooling water supply to bearing jacket", sop: "SOP-SIPAT-DF-001", safety: "Verify isolation valves before opening cooling circuit" },
-    { instruction: "Review vibration trend for correlated rise", sop: "SOP-SIPAT-DF-007", safety: "No special precaution — remote monitoring only" },
+    { instruction: "Confirm lubrication system flow and pressure", sop: "NTPC O&M Best Practices manual", safety: "Allow bearing housing to cool before manual contact" },
+    { instruction: "Check cooling water supply to bearing jacket", sop: "NTPC O&M Best Practices manual", safety: "Verify isolation valves before opening cooling circuit" },
+    { instruction: "Review vibration trend for correlated rise", sop: "IJMET 2010 NDT case study", safety: "No special precaution — remote monitoring only" },
   ],
 };
 

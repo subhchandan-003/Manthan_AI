@@ -7,12 +7,11 @@ import { useSession } from "@/lib/session";
 import type { Role } from "@/lib/types";
 
 const PLANTS = [
-  { short: "SIPAT STPP", full: "SIPAT Super Thermal Power Project" },
-  { short: "NTPC Dadri", full: "NTPC Dadri" },
-  { short: "NTPC Korba", full: "NTPC Korba" },
-  { short: "Tata Power Mundra", full: "Tata Power Mundra" },
-  { short: "NRL Numaligarh", full: "NRL Numaligarh Refinery" },
-  { short: "BHEL Haridwar", full: "BHEL Haridwar" },
+  { short: "SIPAT STPP", full: "NTPC Sipat Super Thermal Power Project — Stage-III (1×800 MW)" },
+  { short: "Maithon Power", full: "Maithon Power Limited — 2×525 MW (Tata Power / DVC JV), Jharkhand" },
+  { short: "NRL Numaligarh", full: "NRL Numaligarh Refinery — Polypropylene Unit Expansion, Assam" },
+  { short: "NTPC Unchahar", full: "NTPC Unchahar Thermal Power Station — 2×210 MW, Uttar Pradesh" },
+  { short: "TANGEDCO Ennore SEZ", full: "TANGEDCO Ennore SEZ Supercritical TPP, Tamil Nadu" },
 ];
 
 const ROLES: Role[] = ["Plant Engineer", "Maintenance Engineer", "Safety Officer", "Shift In-Charge"];

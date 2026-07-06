@@ -38,21 +38,21 @@ const NODE_COLOR: Record<PidNode["type"], string> = {
 };
 
 const NODES: PidNode[] = [
-  { tag: "21-AT-101", name: "Attemperator / Desuperheater", type: "heat-exchanger", x: 260, y: 90, w: 90, h: 40, description: "Spray desuperheating station (BOMAFA) controlling main steam temperature.", service: "Main Steam Temperature Control", linkedSop: "SOP-SIPAT-MS-003" },
-  { tag: "21-MSV-001", name: "Main Steam Stop Valve", type: "valve", x: 460, y: 90, w: 70, h: 36, description: "Isolates main steam flow to the HP turbine inlet.", service: "Main Steam Isolation", linkedSop: "SOP-SIPAT-MS-003" },
-  { tag: "21-PV-101A", name: "Main Steam Safety Valve A", type: "safety", x: 260, y: 190, w: 70, h: 36, description: "Spring-loaded safety relief valve protecting the main steam line.", service: "Overpressure Protection" },
-  { tag: "21-PV-101B", name: "Main Steam Safety Valve B", type: "safety", x: 350, y: 190, w: 70, h: 36, description: "Spring-loaded safety relief valve protecting the main steam line.", service: "Overpressure Protection" },
-  { tag: "21-HV-201", name: "HP Bypass Station", type: "valve", x: 460, y: 190, w: 70, h: 36, description: "Bypasses HP turbine during startup / trip conditions.", service: "HP Bypass Control" },
-  { tag: "21-FN-301A", name: "ID Fan 3A", type: "pump", x: 80, y: 270, w: 80, h: 40, description: "Induced draft fan maintaining furnace negative pressure.", service: "Draft System", linkedSop: "SOP-SIPAT-DF-001" },
+  { tag: "Attemperator", name: "Attemperator / Spray Desuperheater", type: "heat-exchanger", x: 260, y: 90, w: 90, h: 40, description: "Spray desuperheating station controlling main steam temperature at the superheater outlet.", service: "Main Steam Temperature Control", linkedSop: "Drg. XXXX-999-POM-A-004 — Main Steam, HRH & CRH P&ID" },
+  { tag: "Main Steam Stop Valve", name: "Main Steam Stop Valve", type: "valve", x: 460, y: 90, w: 70, h: 36, description: "Isolates main steam flow to the HP turbine inlet.", service: "Main Steam Isolation", linkedSop: "Drg. XXXX-999-POM-A-004 — Main Steam, HRH & CRH P&ID" },
+  { tag: "HP Bypass Valve", name: "HP Bypass Station", type: "valve", x: 260, y: 190, w: 90, h: 36, description: "Bypasses HP turbine during startup / trip conditions.", service: "HP Bypass Control", linkedSop: "Drg. XXXX-999-POM-A-005 — HP & LP Bypass System P&ID" },
+  { tag: "LP Bypass Valve", name: "LP Bypass Station", type: "valve", x: 380, y: 190, w: 90, h: 36, description: "Bypasses LP turbine during startup / trip conditions.", service: "LP Bypass Control", linkedSop: "Drg. XXXX-999-POM-A-005 — HP & LP Bypass System P&ID" },
+  { tag: "FGD Absorber", name: "FGD Absorber", type: "vessel", x: 500, y: 190, w: 90, h: 36, description: "Wet limestone absorber for flue gas desulphurisation.", service: "Flue Gas Desulphurisation", linkedSop: "Drg. XXXX-101-POM-A-022 — Scheme of FGD-Absorber System" },
+  { tag: "ID Fan-A", name: "ID Fan-A", type: "pump", x: 80, y: 270, w: 80, h: 40, description: "Induced draft fan maintaining furnace negative pressure.", service: "Air & Flue Gas Path", linkedSop: "Drg. XXXX-001-POM-A-018a/b — Air & Flue Gas Path" },
 ];
 
 const FLOW_PATHS = [
   { id: "steam", color: "#EF4444", d: "M 60 108 H 260" },
   { id: "steam2", color: "#EF4444", d: "M 350 108 H 460" },
   { id: "steam3", color: "#EF4444", d: "M 530 108 H 600" },
-  { id: "relief", color: "#10B981", d: "M 300 130 V 190" },
-  { id: "relief2", color: "#10B981", d: "M 390 130 V 190" },
-  { id: "bypass", color: "#F59E0B", d: "M 495 130 V 190" },
+  { id: "hpbypass", color: "#F59E0B", d: "M 305 130 V 190" },
+  { id: "lpbypass", color: "#F59E0B", d: "M 425 130 V 190" },
+  { id: "flue", color: "#94A3B8", d: "M 60 130 H 545 V 190" },
   { id: "draft", color: "#94A3B8", d: "M 120 270 V 130 H 60" },
 ];
 
@@ -77,7 +77,7 @@ export default function PidViewerPage() {
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Toolbar */}
         <div className="z-10 flex flex-wrap items-center gap-2 border-b border-border-subtle bg-bg-secondary px-4 py-2.5">
-          <span className="text-xs text-text-secondary">Page 10 of 47 — Main Steam &amp; Superheater System</span>
+          <span className="text-xs text-text-secondary">Drg. XXXX-999-POM-A-004 — NTPC Sipat STPP Stage-III, Main Steam, HRH &amp; CRH P&amp;ID</span>
           <div className="mx-2 h-4 w-px bg-border-subtle" />
           <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.15))} className="rounded-md border border-border-subtle p-1.5 hover:bg-bg-tertiary">
             <ZoomOut className="h-3.5 w-3.5" />
@@ -133,9 +133,9 @@ export default function PidViewerPage() {
               {/* base pipe lines */}
               <path d="M 60 108 H 600" stroke="#3D4A5C" strokeWidth={3} fill="none" />
               <path d="M 120 270 V 130 H 60" stroke="#3D4A5C" strokeWidth={2} fill="none" />
-              <path d="M 300 130 V 190" stroke="#3D4A5C" strokeWidth={2} fill="none" />
-              <path d="M 390 130 V 190" stroke="#3D4A5C" strokeWidth={2} fill="none" />
-              <path d="M 495 130 V 190" stroke="#3D4A5C" strokeWidth={2} fill="none" />
+              <path d="M 305 130 V 190" stroke="#3D4A5C" strokeWidth={2} fill="none" />
+              <path d="M 425 130 V 190" stroke="#3D4A5C" strokeWidth={2} fill="none" />
+              <path d="M 60 130 H 545 V 190" stroke="#3D4A5C" strokeWidth={2} fill="none" />
 
               {showFlow &&
                 FLOW_PATHS.map((f) => (
@@ -213,7 +213,7 @@ export default function PidViewerPage() {
             </div>
             {selected.linkedSop && (
               <Link href="/documents" className="mt-2 inline-block text-[11px] text-accent-blue hover:underline">
-                Linked SOP: {selected.linkedSop} →
+                Reference: {selected.linkedSop} →
               </Link>
             )}
             <div className="mt-3 flex gap-2">
@@ -248,7 +248,7 @@ export default function PidViewerPage() {
               ))}
             </div>
             <div className="pt-2.5 text-xs text-text-secondary">
-              {tab === "documents" && `Documents mentioning ${selected.tag}: Equipment Tag Register, ${selected.linkedSop ?? "General O&M manual"}.`}
+              {tab === "documents" && `Documents mentioning ${selected.tag}: NTPC Sipat STPP Stage-III P&ID set, ${selected.linkedSop ?? "General O&M Best Practices manual"}.`}
               {tab === "history" && (registryMatch?.lastTrip ?? "No recent maintenance events recorded for this tag.")}
               {tab === "connected" && "Upstream: Boiler superheater outlet · Downstream: HP Turbine inlet."}
               {tab === "safety" && (selected.type === "safety" ? "Overpressure protection device — mandatory annual pop testing per OISD guidelines." : "No active safety flags for this equipment.")}
@@ -262,7 +262,7 @@ export default function PidViewerPage() {
         <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border-subtle bg-bg-secondary p-4 lg:block">
           <h3 className="font-display text-sm font-semibold text-text-primary">Legend</h3>
           <p className="mt-1 text-[11px] text-text-muted">
-            SIPAT P&amp;ID has no built-in legend page — this is an AI-generated reference.
+            The Sipat Stage-III bidding P&amp;ID set has no built-in legend page — this is an AI-generated reference.
           </p>
 
           <LegendSection title="Line Types">
@@ -290,10 +290,11 @@ export default function PidViewerPage() {
             </p>
           </LegendSection>
 
-          <LegendSection title="Control Loop Identification">
+          <LegendSection title="Drawing Numbering">
             <p className="text-[11px] leading-relaxed text-text-secondary">
-              Loop numbers follow system-area-sequence (e.g. 21-FN-301A = Unit 2 area 1, Fan, loop 301, unit A).
-              Interlocks shown as diamond nodes on control loop lines.
+              Sipat Stage-III drawings follow a UNIT-AREA-DISCIPLINE-SHEET scheme, e.g.
+              XXXX-999-POM-A-004 = Mechanical (POM) P&amp;ID sheet 004 for the common (999) area.
+              Instrumentation sheets use the POI series, electrical single-lines use POE.
             </p>
           </LegendSection>
         </aside>

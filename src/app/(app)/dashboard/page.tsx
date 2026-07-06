@@ -26,8 +26,8 @@ const docStatusTone = { indexed: "green", processing: "amber", "needs-review": "
 const calStatusColor = { overdue: "bg-accent-red", scheduled: "bg-accent-amber", completed: "bg-accent-green" } as const;
 
 const PINNED_QUESTIONS = [
-  "What's the current status of Feed Water Pump 2B?",
-  "Show me the SOP for boiler startup",
+  "What's the current status of Boiler Feed Pump-A?",
+  "Show me the O&M best practice for boiler startup",
   "Any overdue maintenance items for this week?",
 ];
 
@@ -137,10 +137,10 @@ export default function DashboardPage() {
             />
             <div className="flex flex-col gap-2 text-xs">
               <div className="self-end rounded-md rounded-tr-none bg-bg-tertiary px-3 py-2 text-text-primary">
-                What&apos;s the current status of Feed Water Pump 2B?
+                What&apos;s the current status of Boiler Feed Pump-A?
               </div>
               <div className="self-start rounded-md rounded-tl-none border-l-2 border-l-accent-cyan bg-bg-primary px-3 py-2 text-text-primary">
-                Feed Water Pump 2B (21-FW-201B) is operating normally — bearing temp 61°C, vibration
+                Boiler Feed Pump-A is operating normally — bearing temp 61°C, vibration
                 1.9 mm/s, next PM scheduled for Jul 20, 2026.
               </div>
             </div>
@@ -259,9 +259,9 @@ export default function DashboardPage() {
               icon={<Users className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
             />
             <p className="text-xs leading-relaxed text-text-secondary">
-              Shift A completed. Key notes: Boiler tube leak on Unit 3 superheater section isolated.
-              ID Fan 3A showing elevated bearing temperature (82°C). Coal quality fluctuation noted —
-              GCV dropped to 3,800 kcal/kg.
+              Shift A completed. Key notes: platen superheater tube leak isolated.
+              ID Fan-A showing elevated bearing temperature (82°C). Boiler excess O2 trending above the
+              3.5% dry-basis best-practice target.
             </p>
             <div className="mt-3 flex gap-2">
               <button className="flex-1 rounded-md bg-accent-blue px-3 py-2 text-xs font-semibold text-white hover:bg-[#2f78e6]">
