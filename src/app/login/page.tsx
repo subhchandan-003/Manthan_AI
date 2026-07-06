@@ -166,7 +166,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="mt-2 flex items-center justify-center gap-2 rounded-md bg-accent-blue px-4 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-[#2f78e6]"
+            className="mt-2 flex items-center justify-center gap-2 rounded-md bg-accent-blue px-4 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:brightness-90 transition"
           >
             <Gauge className="h-4 w-4" />
             Log In

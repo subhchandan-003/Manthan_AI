@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   Send,
   Mic,
@@ -39,9 +41,10 @@ function ChatContent() {
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<Tab>("sources");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const firedInitial = useRef(false);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
 
@@ -87,14 +90,27 @@ function ChatContent() {
     recognition.start();
   }
 
+  function handleFileAttach(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setInput((prev) => (prev ? `${prev} [Attached: ${file.name}]` : `[Attached: ${file.name}] `));
+    toast.success("File attached", { description: file.name });
+    e.target.value = "";
+  }
+
+  function startNewChat() {
+    setMessages([]);
+    toast.success("Started a new chat");
+  }
+
   const isStreaming = status === "streaming" || status === "submitted";
 
   return (
     <div className="flex h-full min-h-0">
       {/* Left: Chat */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between border-b border-border-subtle bg-bg-secondary px-5 py-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-border-subtle bg-bg-secondary px-6 py-4">
+          <div className="flex items-center gap-2.5">
             <span className="h-2 w-2 rounded-full bg-accent-cyan animate-pulse-glow" />
             <div>
               <h1 className="font-display text-sm font-semibold text-text-primary">MANTHAN Assistant</h1>
@@ -103,15 +119,15 @@ function ChatContent() {
           </div>
           <div className="flex items-center gap-2 text-xs text-text-secondary">
             <button
-              onClick={() => window.location.reload()}
-              className="flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 hover:bg-bg-tertiary"
+              onClick={startNewChat}
+              className="flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 transition-colors hover:bg-bg-tertiary"
             >
               <Plus className="h-3.5 w-3.5" /> New Chat
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-text-muted">
               <Sparkles className="h-8 w-8 text-accent-cyan" strokeWidth={1.5} />
@@ -121,7 +137,7 @@ function ChatContent() {
               </p>
             </div>
           )}
-          <div className="mx-auto flex max-w-3xl flex-col gap-4">
+          <div className="mx-auto flex max-w-3xl flex-col gap-5">
             {messages.map((m) => {
               const text = m.parts
                 .filter((p) => p.type === "text")
@@ -129,7 +145,13 @@ function ChatContent() {
                 .join("");
               const cited = m.role === "assistant" ? findCitedDocs(text) : [];
               return (
-                <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
+                >
                   <div
                     className={
                       m.role === "user"
@@ -177,16 +199,21 @@ function ChatContent() {
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
             <div ref={bottomRef} />
           </div>
         </div>
 
-        <div className="border-t border-border-subtle bg-bg-secondary p-4">
-          <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-md border border-border-subtle bg-bg-primary px-3 py-2 focus-within:border-border-active">
-            <button className="text-text-muted hover:text-text-secondary" aria-label="Attach file">
+        <div className="border-t border-border-subtle bg-bg-secondary p-5">
+          <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-md border border-border-subtle bg-bg-primary px-3 py-2.5 focus-within:border-border-active">
+            <input ref={fileInputRef} type="file" hidden onChange={handleFileAttach} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="text-text-muted transition-colors hover:text-text-secondary"
+              aria-label="Attach file"
+            >
               <Paperclip className="h-4 w-4" />
             </button>
             <textarea

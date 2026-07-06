@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   ZoomIn,
   ZoomOut,
@@ -14,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { equipment as equipmentRegistry } from "@/lib/mock-data";
+import { downloadTextFile } from "@/lib/download";
 
 interface PidNode {
   tag: string;
@@ -72,6 +75,18 @@ export default function PidViewerPage() {
 
   const registryMatch = selected ? equipmentRegistry.find((e) => e.tag === selected.tag) : undefined;
 
+  function handleExport() {
+    const svg = document.getElementById("pid-canvas-svg");
+    if (!svg) return;
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg-primary").trim();
+    clone.setAttribute("style", `background:${bg}`);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    const svgString = new XMLSerializer().serializeToString(clone);
+    downloadTextFile(`sipat-pid-XXXX-999-POM-A-004-${Date.now()}.svg`, svgString, "image/svg+xml");
+    toast.success("P&ID exported", { description: "Downloaded the current view as an SVG file." });
+  }
+
   return (
     <div className="flex h-full min-h-0">
       <div className="relative flex min-w-0 flex-1 flex-col">
@@ -118,18 +133,21 @@ export default function PidViewerPage() {
           >
             <BookOpen className="h-3.5 w-3.5" /> Legend
           </button>
-          <button className="ml-auto flex items-center gap-1 rounded-md border border-border-subtle px-2 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary">
+          <button
+            onClick={handleExport}
+            className="ml-auto flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:bg-bg-tertiary"
+          >
             <Download className="h-3.5 w-3.5" /> Export
           </button>
         </div>
 
         {/* Canvas */}
-        <div className="flex-1 overflow-auto bg-[#0a0e13] p-8">
+        <div className="flex-1 overflow-auto bg-[#0a0e13] p-8 md:p-10">
           <div
             className="mx-auto origin-top transition-transform"
             style={{ transform: `scale(${zoom})`, width: 640 }}
           >
-            <svg viewBox="0 0 640 340" className="w-full rounded-md border border-border-subtle bg-bg-primary">
+            <svg id="pid-canvas-svg" viewBox="0 0 640 340" className="w-full rounded-md border border-border-subtle bg-bg-primary">
               {/* base pipe lines */}
               <path d="M 60 108 H 600" stroke="#3D4A5C" strokeWidth={3} fill="none" />
               <path d="M 120 270 V 130 H 60" stroke="#3D4A5C" strokeWidth={2} fill="none" />
@@ -194,44 +212,52 @@ export default function PidViewerPage() {
         </div>
 
         {/* Popover */}
-        {selected && (
-          <div className="absolute right-4 top-16 z-20 w-80 rounded-lg border border-border-subtle bg-bg-elevated p-4 shadow-xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-mono text-xs text-accent-cyan">{selected.tag}</p>
-                <h3 className="font-display text-sm font-semibold text-text-primary">{selected.name}</h3>
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              initial={{ opacity: 0, x: 16, scale: 0.97 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 16, scale: 0.97 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute right-4 top-16 z-20 w-80 rounded-lg border border-border-subtle bg-bg-elevated p-5 shadow-xl"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-mono text-xs text-accent-cyan">{selected.tag}</p>
+                  <h3 className="font-display text-sm font-semibold text-text-primary">{selected.name}</h3>
+                </div>
+                <button onClick={() => setSelected(null)} className="text-text-muted transition-colors hover:text-text-primary">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button onClick={() => setSelected(null)} className="text-text-muted hover:text-text-primary">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-text-secondary">{selected.description}</p>
-            <div className="mt-2 flex flex-col gap-1 text-[11px] text-text-muted">
-              <span>Service: {selected.service}</span>
-              {registryMatch && <span>Location: {registryMatch.location}</span>}
-              {registryMatch?.lastTrip && <span>Last maintenance: {registryMatch.lastTrip}</span>}
-            </div>
-            {selected.linkedSop && (
-              <Link href="/documents" className="mt-2 inline-block text-[11px] text-accent-blue hover:underline">
-                Reference: {selected.linkedSop} →
-              </Link>
-            )}
-            <div className="mt-3 flex gap-2">
-              <Link
-                href="/maintenance"
-                className="flex-1 rounded-md border border-border-subtle py-1.5 text-center text-xs font-medium text-text-primary hover:bg-bg-tertiary"
-              >
-                Full Details
-              </Link>
-              <Link
-                href={`/chat?q=${encodeURIComponent(`Tell me about ${selected.tag} — ${selected.name}`)}`}
-                className="flex-1 rounded-md bg-accent-blue py-1.5 text-center text-xs font-semibold text-white hover:bg-[#2f78e6]"
-              >
-                Ask AI
-              </Link>
-            </div>
-          </div>
-        )}
+              <p className="mt-2.5 text-xs leading-relaxed text-text-secondary">{selected.description}</p>
+              <div className="mt-2.5 flex flex-col gap-1.5 text-[11px] text-text-muted">
+                <span>Service: {selected.service}</span>
+                {registryMatch && <span>Location: {registryMatch.location}</span>}
+                {registryMatch?.lastTrip && <span>Last maintenance: {registryMatch.lastTrip}</span>}
+              </div>
+              {selected.linkedSop && (
+                <Link href="/documents" className="mt-2.5 inline-block text-[11px] text-accent-blue hover:underline">
+                  Reference: {selected.linkedSop} →
+                </Link>
+              )}
+              <div className="mt-4 flex gap-2">
+                <Link
+                  href="/maintenance"
+                  className="flex-1 rounded-md border border-border-subtle py-2 text-center text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+                >
+                  Full Details
+                </Link>
+                <Link
+                  href={`/chat?q=${encodeURIComponent(`Tell me about ${selected.tag} — ${selected.name}`)}`}
+                  className="flex-1 rounded-md bg-accent-blue py-2 text-center text-xs font-semibold text-white transition hover:brightness-90"
+                >
+                  Ask AI
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Cross-reference bottom panel */}
         {selected && (
@@ -259,7 +285,7 @@ export default function PidViewerPage() {
 
       {/* Legend */}
       {showLegend && (
-        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border-subtle bg-bg-secondary p-4 lg:block">
+        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border-subtle bg-bg-secondary p-5 lg:block">
           <h3 className="font-display text-sm font-semibold text-text-primary">Legend</h3>
           <p className="mt-1 text-[11px] text-text-muted">
             The Sipat Stage-III bidding P&amp;ID set has no built-in legend page — this is an AI-generated reference.

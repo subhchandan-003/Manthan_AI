@@ -49,7 +49,7 @@ function Gate({ children }: { children: React.ReactNode }) {
                 </p>
                 <button
                   onClick={() => router.replace("/dashboard")}
-                  className="mt-2 rounded-md bg-accent-blue px-4 py-2 text-sm font-semibold text-white hover:bg-[#2f78e6]"
+                  className="mt-2 rounded-md bg-accent-blue px-4 py-2 text-sm font-semibold text-white hover:brightness-90 transition"
                 >
                   Back to Dashboard
                 </button>

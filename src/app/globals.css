@@ -1,21 +1,47 @@
 @import "tailwindcss";
 
+/*
+ * Industrial control-room palette, modeled on real plant pilot-lamp colors:
+ * blue = running/normal, amber = caution, red = fault/stop, green = healthy.
+ * Dark theme = night-shift control room. Light theme = plant-manual paper.
+ */
 :root {
-  --bg-primary: #0c1117;
-  --bg-secondary: #151c25;
-  --bg-tertiary: #1e2731;
-  --bg-elevated: #252f3b;
-  --border-subtle: #2a3544;
-  --border-active: #3d8bfd;
-  --text-primary: #f0f4f8;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent-blue: #3d8bfd;
-  --accent-amber: #f59e0b;
-  --accent-red: #ef4444;
-  --accent-green: #10b981;
-  --accent-cyan: #06b6d4;
-  --accent-purple: #8b5cf6;
+  --bg-primary: #0d1012;
+  --bg-secondary: #161a1d;
+  --bg-tertiary: #20262a;
+  --bg-elevated: #2a3136;
+  --border-subtle: #313a40;
+  --border-active: #e8a33d;
+  --text-primary: #f1f3f4;
+  --text-secondary: #9ca8af;
+  --text-muted: #6b7780;
+  --accent-blue: #2f80d6;
+  --accent-amber: #e8a33d;
+  --accent-red: #e5484d;
+  --accent-green: #3dae6b;
+  --accent-cyan: #35b6c4;
+  --accent-purple: #9575cd;
+  --accent-rust: #c1622d;
+  --shadow-color: 0deg 0% 0%;
+}
+
+:root[data-theme="light"] {
+  --bg-primary: #f2f3f1;
+  --bg-secondary: #e8eae6;
+  --bg-tertiary: #dde0db;
+  --bg-elevated: #ffffff;
+  --border-subtle: #c9cdc5;
+  --border-active: #b8781f;
+  --text-primary: #14181a;
+  --text-secondary: #43494d;
+  --text-muted: #6b7278;
+  --accent-blue: #1d5fa8;
+  --accent-amber: #b8781f;
+  --accent-red: #c4292e;
+  --accent-green: #1f8449;
+  --accent-cyan: #157a87;
+  --accent-purple: #6b4fa0;
+  --accent-rust: #9c4a1e;
 }
 
 @theme inline {
@@ -34,6 +60,7 @@
   --color-accent-green: var(--accent-green);
   --color-accent-cyan: var(--accent-cyan);
   --color-accent-purple: var(--accent-purple);
+  --color-accent-rust: var(--accent-rust);
 
   --font-sans: var(--font-ibm-plex-sans);
   --font-display: var(--font-dm-sans);
@@ -44,9 +71,17 @@
   border-color: var(--border-subtle);
 }
 
+html {
+  color-scheme: dark;
+}
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 ::-webkit-scrollbar {
@@ -75,4 +110,27 @@ body {
 }
 .animate-pulse-glow {
   animation: pulse-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

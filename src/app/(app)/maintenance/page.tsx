@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info } from "lucide-react";
+import { toast } from "sonner";
+import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
 import { getRoleAccess } from "@/lib/roles";
 import { equipment, maintenanceEvents, spareParts } from "@/lib/mock-data";
@@ -63,6 +65,10 @@ export default function MaintenancePage() {
   const [tab, setTab] = useState<Tab>("overview");
   const [symptom, setSymptom] = useState("");
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
+  const [woModalOpen, setWoModalOpen] = useState(false);
+  const [woDescription, setWoDescription] = useState("");
+  const [woPriority, setWoPriority] = useState("Medium");
+  const [requestedParts, setRequestedParts] = useState<Set<string>>(new Set());
 
   const selected = equipment.find((e) => e.id === selectedId) as EquipmentItem;
   const filtered = useMemo(
@@ -85,11 +91,27 @@ export default function MaintenancePage() {
     setDoneSteps(new Set());
   }
 
+  function submitWorkOrder(e: React.FormEvent) {
+    e.preventDefault();
+    const woNumber = `WO-${Math.floor(10000 + Math.random() * 89999)}`;
+    toast.success(`Work order ${woNumber} created`, {
+      description: `${selected.tag} · Priority: ${woPriority}`,
+    });
+    setWoModalOpen(false);
+    setWoDescription("");
+    setWoPriority("Medium");
+  }
+
+  function requestSparePart(partNumber: string) {
+    setRequestedParts((prev) => new Set(prev).add(partNumber));
+    toast.success("Spare part requested", { description: partNumber });
+  }
+
   return (
     <div className="flex h-full min-h-0">
       <div className="flex w-80 shrink-0 flex-col border-r border-border-subtle bg-bg-secondary">
-        <div className="border-b border-border-subtle p-3">
-          <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1.5">
+        <div className="border-b border-border-subtle p-4">
+          <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-3 py-2">
             <Search className="h-3.5 w-3.5 text-text-muted" />
             <input
               value={search}
@@ -104,7 +126,7 @@ export default function MaintenancePage() {
             <button
               key={e.id}
               onClick={() => selectEquipment(e.id)}
-              className={`flex w-full items-center gap-2.5 border-b border-border-subtle px-3 py-2.5 text-left text-xs hover:bg-bg-tertiary ${
+              className={`flex w-full items-center gap-3 border-b border-border-subtle px-4 py-3 text-left text-xs transition-colors hover:bg-bg-tertiary ${
                 selected.id === e.id ? "bg-bg-tertiary" : ""
               }`}
             >
@@ -121,16 +143,16 @@ export default function MaintenancePage() {
         </div>
       </div>
 
-      <div className="min-w-0 flex-1 overflow-y-auto p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0 flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-xl font-semibold text-text-primary">
+            <h1 className="font-display text-xl font-semibold text-text-primary md:text-2xl">
               {selected.tag} — {selected.name}
             </h1>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1.5 text-sm text-text-secondary">
               {selected.system} · {selected.location}
             </p>
-            <div className="mt-2">
+            <div className="mt-2.5">
               <Badge tone={selected.health === "healthy" ? "green" : selected.health === "warning" ? "amber" : "red"}>
                 Operational — {selected.health === "healthy" ? "Normal" : selected.health === "warning" ? "Warning" : "Critical"}
               </Badge>
@@ -139,30 +161,33 @@ export default function MaintenancePage() {
           <div className="flex gap-2">
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about ${selected.tag} — ${selected.name}`)}`}
-              className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
+              className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
             >
               <MessageSquare className="h-3.5 w-3.5" /> Ask AI
             </Link>
             <Link
               href="/pid-viewer"
-              className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
+              className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
             >
               <GitBranch className="h-3.5 w-3.5" /> View on P&amp;ID
             </Link>
             {!isReadOnly && (
-              <button className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2f78e6]">
+              <button
+                onClick={() => setWoModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3 py-2 text-xs font-semibold text-white transition hover:brightness-90"
+              >
                 <ClipboardPlus className="h-3.5 w-3.5" /> Generate Work Order
               </button>
             )}
           </div>
         </div>
 
-        <div className="mt-5 flex gap-1 overflow-x-auto border-b border-border-subtle">
+        <div className="mt-6 flex gap-1 overflow-x-auto border-b border-border-subtle">
           {visibleTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`shrink-0 border-b-2 px-3 py-2 text-xs font-medium ${
+              className={`shrink-0 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                 tab === t.key ? "border-b-accent-blue text-text-primary" : "border-b-transparent text-text-muted hover:text-text-secondary"
               }`}
             >
@@ -171,12 +196,12 @@ export default function MaintenancePage() {
           ))}
         </div>
 
-        <div className="mt-5">
+        <div className="mt-6">
           {tab === "overview" && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="rounded-lg border border-border-subtle bg-bg-secondary p-5">
                 <h3 className="font-display text-sm font-semibold text-text-primary">Specifications</h3>
-                <dl className="mt-3 space-y-2 text-xs">
+                <dl className="mt-4 space-y-2.5 text-xs">
                   <Row label="Type" value={selected.type} />
                   <Row label="OEM" value={selected.oem} />
                   <Row label="Commission date" value={selected.commissionDate} />
@@ -184,9 +209,9 @@ export default function MaintenancePage() {
                   <Row label="Running hours" value={`${selected.runningHours.toLocaleString()} hrs`} />
                 </dl>
               </div>
-              <div className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
+              <div className="rounded-lg border border-border-subtle bg-bg-secondary p-5">
                 <h3 className="font-display text-sm font-semibold text-text-primary">Current Condition</h3>
-                <dl className="mt-3 space-y-2 text-xs">
+                <dl className="mt-4 space-y-2.5 text-xs">
                   {selected.bearingTemp !== undefined && (
                     <Row label="Bearing temperature" value={`${selected.bearingTemp}°C`} warn={selected.bearingTemp > 75} />
                   )}
@@ -201,20 +226,20 @@ export default function MaintenancePage() {
           )}
 
           {tab === "history" && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <p className="text-xs text-text-muted">{history.length} maintenance events on record</p>
-              <div className="relative ml-2 flex flex-col gap-5 border-l border-border-subtle pl-5">
+              <div className="relative ml-2 flex flex-col gap-6 border-l border-border-subtle pl-6">
                 {history.length === 0 && <p className="text-sm text-text-muted">No maintenance events recorded.</p>}
                 {history.map((h) => (
                   <div key={h.id} className="relative">
-                    <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-bg-primary ring-2 ring-border-active" />
+                    <span className="absolute -left-[27px] top-1 h-2.5 w-2.5 rounded-full bg-bg-primary ring-2 ring-border-active" />
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-medium text-text-primary">{h.date}</span>
                       <Badge tone={eventTone[h.type]}>{h.type}</Badge>
                       <span className="text-text-muted">{h.durationHrs}h</span>
                     </div>
-                    <p className="mt-1 text-sm text-text-secondary">{h.description}</p>
-                    <p className="mt-0.5 text-[11px] text-text-muted">Performed by {h.performedBy}</p>
+                    <p className="mt-1.5 text-sm text-text-secondary">{h.description}</p>
+                    <p className="mt-1 text-[11px] text-text-muted">Performed by {h.performedBy}</p>
                   </div>
                 ))}
               </div>
@@ -222,7 +247,7 @@ export default function MaintenancePage() {
           )}
 
           {tab === "recommendations" && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {selected.health !== "healthy" && (
                 <RecCard
                   tone="red"
@@ -244,12 +269,12 @@ export default function MaintenancePage() {
           )}
 
           {tab === "sops" && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               {sops.map((s) => (
                 <Link
                   key={s}
                   href="/documents"
-                  className="rounded-md border border-border-subtle bg-bg-secondary p-3 text-xs text-text-primary hover:border-border-active"
+                  className="rounded-md border border-border-subtle bg-bg-secondary p-4 text-xs text-text-primary transition-colors hover:border-border-active"
                 >
                   {s}
                 </Link>
@@ -259,35 +284,51 @@ export default function MaintenancePage() {
 
           {tab === "spares" && (
             <div className="overflow-hidden rounded-lg border border-border-subtle">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-bg-tertiary text-text-secondary">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Part Number</th>
-                    <th className="px-3 py-2 font-medium">Description</th>
-                    <th className="px-3 py-2 font-medium">Stock</th>
-                    <th className="px-3 py-2 font-medium">Reorder Point</th>
-                    <th className="px-3 py-2 font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {spareParts.map((p) => (
-                    <tr key={p.partNumber} className="border-t border-border-subtle bg-bg-secondary">
-                      <td className="px-3 py-2 font-mono text-text-primary">{p.partNumber}</td>
-                      <td className="px-3 py-2 text-text-secondary">{p.description}</td>
-                      <td className="px-3 py-2">
-                        <Badge tone={p.stock <= p.reorderPoint ? "amber" : "green"}>{p.stock}</Badge>
-                      </td>
-                      <td className="px-3 py-2 text-text-secondary">{p.reorderPoint}</td>
-                      <td className="px-3 py-2">
-                        <button className="rounded-md border border-border-subtle px-2 py-1 text-[11px] hover:bg-bg-tertiary">
-                          Request
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-bg-tertiary text-text-secondary">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Part Number</th>
+                      <th className="px-4 py-3 font-medium">Description</th>
+                      <th className="px-4 py-3 font-medium">Stock</th>
+                      <th className="px-4 py-3 font-medium">Reorder Point</th>
+                      <th className="px-4 py-3 font-medium"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="bg-bg-secondary px-3 py-2 text-[11px] text-text-muted">
+                  </thead>
+                  <tbody>
+                    {spareParts.map((p) => (
+                      <tr key={p.partNumber} className="border-t border-border-subtle bg-bg-secondary">
+                        <td className="px-4 py-3 font-mono text-text-primary">{p.partNumber}</td>
+                        <td className="px-4 py-3 text-text-secondary">{p.description}</td>
+                        <td className="px-4 py-3">
+                          <Badge tone={p.stock <= p.reorderPoint ? "amber" : "green"}>{p.stock}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-text-secondary">{p.reorderPoint}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => requestSparePart(p.partNumber)}
+                            disabled={requestedParts.has(p.partNumber)}
+                            className={`flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] transition-colors ${
+                              requestedParts.has(p.partNumber)
+                                ? "border-accent-green/30 bg-accent-green/10 text-accent-green"
+                                : "border-border-subtle text-text-primary hover:bg-bg-tertiary"
+                            }`}
+                          >
+                            {requestedParts.has(p.partNumber) ? (
+                              <>
+                                <PackageCheck className="h-3 w-3" /> Requested
+                              </>
+                            ) : (
+                              "Request"
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="bg-bg-secondary px-4 py-3 text-[11px] text-text-muted">
                 Based on OEM manual and consumption history
               </p>
             </div>
@@ -295,7 +336,7 @@ export default function MaintenancePage() {
 
           {tab === "troubleshooting" && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+              <label className="mb-2 block text-xs font-medium text-text-secondary">
                 Select the issue you&apos;re experiencing
               </label>
               <select
@@ -304,7 +345,7 @@ export default function MaintenancePage() {
                   setSymptom(e.target.value);
                   setDoneSteps(new Set());
                 }}
-                className="w-full max-w-sm rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-xs text-text-primary focus:border-border-active focus:outline-none"
+                className="w-full max-w-sm rounded-md border border-border-subtle bg-bg-primary px-3 py-2.5 text-xs text-text-primary focus:border-border-active focus:outline-none"
               >
                 <option value="">Choose a symptom...</option>
                 {SYMPTOMS.map((s) => (
@@ -321,10 +362,10 @@ export default function MaintenancePage() {
               )}
 
               {steps.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3">
+                <div className="mt-5 flex flex-col gap-3">
                   {steps.map((s, i) => (
-                    <div key={i} className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
-                      <div className="flex items-start gap-2.5">
+                    <div key={i} className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
+                      <div className="flex items-start gap-3">
                         <input
                           type="checkbox"
                           checked={doneSteps.has(i)}
@@ -342,14 +383,14 @@ export default function MaintenancePage() {
                           <p className={`text-sm ${doneSteps.has(i) ? "text-text-muted line-through" : "text-text-primary"}`}>
                             Step {i + 1}: {s.instruction}
                           </p>
-                          <p className="mt-1 text-[11px] text-text-muted">Reference: {s.sop}</p>
+                          <p className="mt-1.5 text-[11px] text-text-muted">Reference: {s.sop}</p>
                           <p className="mt-0.5 text-[11px] text-accent-amber">⚠ {s.safety}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                   {doneSteps.size === steps.length && (
-                    <div className="rounded-lg border border-l-2 border-l-accent-cyan border-border-subtle bg-bg-secondary p-3 text-sm text-text-primary">
+                    <div className="rounded-lg border border-l-2 border-l-accent-cyan border-border-subtle bg-bg-secondary p-4 text-sm text-text-primary">
                       All steps complete. Based on findings, recommend replacing worn components and updating
                       the PM interval for this failure mode.
                     </div>
@@ -360,6 +401,45 @@ export default function MaintenancePage() {
           )}
         </div>
       </div>
+
+      <Modal open={woModalOpen} onClose={() => setWoModalOpen(false)} title="Generate Work Order">
+        <form onSubmit={submitWorkOrder} className="flex flex-col gap-4 text-xs">
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Equipment</label>
+            <input
+              readOnly
+              value={`${selected.tag} — ${selected.name}`}
+              className="w-full rounded-md border border-border-subtle bg-bg-tertiary px-3 py-2 text-text-secondary"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Priority</label>
+            <select
+              value={woPriority}
+              onChange={(e) => setWoPriority(e.target.value)}
+              className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary focus:border-border-active focus:outline-none"
+            >
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+              <option>Critical</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Description of Work</label>
+            <textarea
+              value={woDescription}
+              onChange={(e) => setWoDescription(e.target.value)}
+              rows={3}
+              placeholder="Describe the work required..."
+              className="w-full resize-none rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-muted focus:border-border-active focus:outline-none"
+            />
+          </div>
+          <button type="submit" className="mt-1 rounded-md bg-accent-blue py-2.5 font-semibold text-white transition hover:brightness-90">
+            Create Work Order
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }
@@ -375,7 +455,7 @@ function Row({ label, value, warn }: { label: string; value: string; warn?: bool
 
 function RecCard({ tone, icon, text }: { tone: "red" | "amber" | "cyan"; icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-lg border border-border-subtle bg-bg-secondary p-3">
+    <div className="flex items-start gap-3 rounded-lg border border-border-subtle bg-bg-secondary p-4">
       <span className={tone === "red" ? "text-accent-red" : tone === "amber" ? "text-accent-amber" : "text-accent-cyan"}>
         {icon}
       </span>

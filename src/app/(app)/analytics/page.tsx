@@ -16,12 +16,12 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { documents, equipment } from "@/lib/mock-data";
 
 const COLORS = {
-  blue: "#3D8BFD",
-  amber: "#F59E0B",
-  red: "#EF4444",
-  green: "#10B981",
-  cyan: "#06B6D4",
-  purple: "#8B5CF6",
+  blue: "#2F80D6",
+  amber: "#E8A33D",
+  red: "#E5484D",
+  green: "#3DAE6B",
+  cyan: "#35B6C4",
+  purple: "#9575CD",
 };
 
 const oeeTrend = [
@@ -86,10 +86,10 @@ const tooltipStyle = {
 
 export default function AnalyticsPage() {
   return (
-    <div className="mx-auto max-w-[1400px] p-6">
-      <h1 className="font-display text-xl font-semibold text-text-primary">Analytics &amp; Insights</h1>
+    <div className="mx-auto max-w-[1440px] p-6 md:p-8">
+      <h1 className="font-display text-xl font-semibold text-text-primary md:text-2xl">Analytics &amp; Insights</h1>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader title="Equipment Reliability Trend (OEE %)" />
           <ResponsiveContainer width="100%" height={220}>
@@ -169,9 +169,9 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-8">
         <h2 className="font-display text-sm font-semibold text-text-primary">AI-Generated Insights</h2>
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-4 flex flex-col gap-4">
           {insights.map((insight) => (
             <Card key={insight} aiGenerated>
               <p className="text-sm leading-relaxed text-text-primary">💡 {insight}</p>
