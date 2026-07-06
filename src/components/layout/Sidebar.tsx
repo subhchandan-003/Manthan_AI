@@ -14,20 +14,25 @@ import {
   Eye,
 } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "@/lib/session";
+import { getRoleAccess, type NavKey } from "@/lib/roles";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/chat", label: "AI Query Assistant", icon: MessageSquare },
-  { href: "/documents", label: "Document Intelligence Hub", icon: FileText },
-  { href: "/maintenance", label: "Maintenance & Operations", icon: Wrench },
-  { href: "/safety", label: "Safety & Compliance", icon: ShieldAlert },
-  { href: "/analytics", label: "Analytics & Insights", icon: BarChart3 },
-  { href: "/settings", label: "Settings & Admin", icon: Settings },
+const NAV_ITEMS: { href: string; key: NavKey; label: string; icon: typeof LayoutDashboard }[] = [
+  { href: "/dashboard", key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/chat", key: "chat", label: "AI Query Assistant", icon: MessageSquare },
+  { href: "/documents", key: "documents", label: "Document Intelligence Hub", icon: FileText },
+  { href: "/maintenance", key: "maintenance", label: "Maintenance & Operations", icon: Wrench },
+  { href: "/safety", key: "safety", label: "Safety & Compliance", icon: ShieldAlert },
+  { href: "/analytics", key: "analytics", label: "Analytics & Insights", icon: BarChart3 },
+  { href: "/settings", key: "settings", label: "Settings & Admin", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
+  const { session } = useSession();
+  const access = getRoleAccess(session?.role);
+  const visibleItems = NAV_ITEMS.filter((item) => access.nav.includes(item.key));
 
   return (
     <aside
@@ -47,7 +52,7 @@ export function Sidebar() {
         )}
       </div>
       <nav className="flex flex-col gap-1 p-2.5">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
@@ -67,6 +72,11 @@ export function Sidebar() {
           );
         })}
       </nav>
+      {expanded && session?.role && (
+        <div className="mt-auto border-t border-border-subtle px-4 py-3 text-[11px] text-text-muted">
+          Viewing as {session.role}
+        </div>
+      )}
     </aside>
   );
 }

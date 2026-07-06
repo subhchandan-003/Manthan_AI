@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Badge } from "@/components/ui/Badge";
+import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import { equipment, maintenanceEvents, spareParts } from "@/lib/mock-data";
 import type { EquipmentItem } from "@/lib/types";
 
@@ -49,7 +51,13 @@ const TROUBLESHOOT_STEPS: Record<string, { instruction: string; sop: string; saf
   ],
 };
 
+const READONLY_HIDDEN_TABS: Tab[] = ["spares", "troubleshooting"];
+
 export default function MaintenancePage() {
+  const { session } = useSession();
+  const isReadOnly = getRoleAccess(session?.role).maintenance === "readonly";
+  const visibleTabs = isReadOnly ? TABS.filter((t) => !READONLY_HIDDEN_TABS.includes(t.key)) : TABS;
+
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState(equipment[0].id);
   const [tab, setTab] = useState<Tab>("overview");
@@ -141,14 +149,16 @@ export default function MaintenancePage() {
             >
               <GitBranch className="h-3.5 w-3.5" /> View on P&amp;ID
             </Link>
-            <button className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2f78e6]">
-              <ClipboardPlus className="h-3.5 w-3.5" /> Generate Work Order
-            </button>
+            {!isReadOnly && (
+              <button className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2f78e6]">
+                <ClipboardPlus className="h-3.5 w-3.5" /> Generate Work Order
+              </button>
+            )}
           </div>
         </div>
 
         <div className="mt-5 flex gap-1 overflow-x-auto border-b border-border-subtle">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}

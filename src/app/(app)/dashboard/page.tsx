@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Gauge } from "@/components/ui/Gauge";
 import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import { alerts, documents, calendarEvents, complianceRows } from "@/lib/mock-data";
 
 const severityTone = { critical: "red", warning: "amber", info: "blue" } as const;
@@ -34,6 +35,8 @@ const PINNED_QUESTIONS = [
 export default function DashboardPage() {
   const { session } = useSession();
   const router = useRouter();
+  const access = getRoleAccess(session?.role);
+  const cards = access.dashboardCards;
 
   const criticalCount = alerts.filter((a) => a.severity === "critical").length;
   const compliancePassed = complianceRows.filter((c) => c.status === "pass").length;
@@ -63,9 +66,11 @@ export default function DashboardPage() {
           <Link href="/documents" className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-semibold text-text-primary hover:bg-bg-tertiary">
             <Upload className="h-3.5 w-3.5" /> Upload Document
           </Link>
-          <Link href="/safety" className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-semibold text-text-primary hover:bg-bg-tertiary">
-            <ShieldCheck className="h-3.5 w-3.5" /> Safety Check
-          </Link>
+          {access.safety !== "none" && (
+            <Link href="/safety" className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-semibold text-text-primary hover:bg-bg-tertiary">
+              <ShieldCheck className="h-3.5 w-3.5" /> Safety Check
+            </Link>
+          )}
           <Link href="/pid-viewer" className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-semibold text-text-primary hover:bg-bg-tertiary">
             <GitBranch className="h-3.5 w-3.5" /> View P&amp;IDs
           </Link>
@@ -75,34 +80,38 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Column 1 */}
         <div className="flex flex-col gap-5">
-          <Card>
-            <CardHeader title="Plant Health Overview" />
-            <div className="flex items-center justify-center py-2">
-              <Gauge value={87} size={120} color="var(--accent-cyan)" label="Overall Equipment Effectiveness" />
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-              <Link href="/maintenance" className="rounded-md p-2 hover:bg-bg-tertiary">
-                <Gauge value={92} size={56} stroke={5} color="var(--accent-green)" />
-                <div className="mt-1 text-[11px] text-text-secondary">Boiler</div>
-              </Link>
-              <Link href="/maintenance" className="rounded-md p-2 hover:bg-bg-tertiary">
-                <Gauge value={78} size={56} stroke={5} color="var(--accent-amber)" />
-                <div className="mt-1 text-[11px] text-text-secondary">Turbine</div>
-              </Link>
-              <Link href="/maintenance" className="rounded-md p-2 hover:bg-bg-tertiary">
-                <Gauge value={95} size={56} stroke={5} color="var(--accent-green)" />
-                <div className="mt-1 text-[11px] text-text-secondary">BOP</div>
-              </Link>
-            </div>
-          </Card>
+          {cards.plantHealth && (
+            <Card>
+              <CardHeader title="Plant Health Overview" />
+              <div className="flex items-center justify-center py-2">
+                <Gauge value={87} size={120} color="var(--accent-cyan)" label="Overall Equipment Effectiveness" />
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                <Link href="/maintenance" className="rounded-md p-2 hover:bg-bg-tertiary">
+                  <Gauge value={92} size={56} stroke={5} color="var(--accent-green)" />
+                  <div className="mt-1 text-[11px] text-text-secondary">Boiler</div>
+                </Link>
+                <Link href="/maintenance" className="rounded-md p-2 hover:bg-bg-tertiary">
+                  <Gauge value={78} size={56} stroke={5} color="var(--accent-amber)" />
+                  <div className="mt-1 text-[11px] text-text-secondary">Turbine</div>
+                </Link>
+                <Link href="/maintenance" className="rounded-md p-2 hover:bg-bg-tertiary">
+                  <Gauge value={95} size={56} stroke={5} color="var(--accent-green)" />
+                  <div className="mt-1 text-[11px] text-text-secondary">BOP</div>
+                </Link>
+              </div>
+            </Card>
+          )}
 
           <Card>
             <CardHeader
               title="Active Alerts"
               action={
-                <Link href="/safety" className="text-xs text-accent-blue hover:underline">
-                  View All
-                </Link>
+                access.safety !== "none" && (
+                  <Link href="/safety" className="text-xs text-accent-blue hover:underline">
+                    View All
+                  </Link>
+                )
               }
             />
             <div className="flex flex-col divide-y divide-border-subtle">
@@ -196,82 +205,93 @@ export default function DashboardPage() {
 
         {/* Column 3 */}
         <div className="flex flex-col gap-5">
-          <Card>
-            <CardHeader
-              title="Maintenance Calendar"
-              icon={<CalendarClock className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
-              action={
-                <Link href="/maintenance" className="text-xs text-accent-blue hover:underline">
-                  View Full Schedule
-                </Link>
-              }
-            />
-            <div className="flex flex-col gap-2">
-              {calendarEvents.slice(0, 3).map((c) => (
-                <div key={c.id} className="flex items-center gap-2.5 text-xs">
-                  <span className={`h-2 w-2 rounded-full shrink-0 ${calStatusColor[c.status]}`} />
-                  <span className="flex-1 truncate text-text-primary">{c.title}</span>
-                  <span className="shrink-0 text-text-muted">
-                    {new Date(c.date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          {cards.maintenanceCalendar && (
+            <Card>
+              <CardHeader
+                title="Maintenance Calendar"
+                icon={<CalendarClock className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
+                action={
+                  <Link href="/maintenance" className="text-xs text-accent-blue hover:underline">
+                    View Full Schedule
+                  </Link>
+                }
+              />
+              <div className="flex flex-col gap-2">
+                {calendarEvents.slice(0, 3).map((c) => (
+                  <div key={c.id} className="flex items-center gap-2.5 text-xs">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${calStatusColor[c.status]}`} />
+                    <span className="flex-1 truncate text-text-primary">{c.title}</span>
+                    <span className="shrink-0 text-text-muted">
+                      {new Date(c.date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
-          <Card>
-            <CardHeader
-              title="Safety Compliance Snapshot"
-              icon={<ClipboardCheck className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
-            />
-            <div className="flex items-center gap-4">
-              <Gauge value={94} size={80} color="var(--accent-green)" />
-              <div className="flex-1 space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">PTW compliance</span>
-                  <span className="font-medium text-accent-green">100% ✓</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">SOP adherence</span>
-                  <span className="font-medium text-accent-green">96% ✓</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Overdue inspections</span>
-                  <span className="font-medium text-accent-amber">3 ⚠️</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Open NCRs</span>
-                  <span className="font-medium text-accent-amber">2 ⚠️</span>
+          {cards.safetyCompliance && (
+            <Card>
+              <CardHeader
+                title="Safety Compliance Snapshot"
+                icon={<ClipboardCheck className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
+              />
+              <div className="flex items-center gap-4">
+                <Gauge value={94} size={80} color="var(--accent-green)" />
+                <div className="flex-1 space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">PTW compliance</span>
+                    <span className="font-medium text-accent-green">100% ✓</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">SOP adherence</span>
+                    <span className="font-medium text-accent-green">96% ✓</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Overdue inspections</span>
+                    <span className="font-medium text-accent-amber">3 ⚠️</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Open NCRs</span>
+                    <span className="font-medium text-accent-amber">2 ⚠️</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <Link
-              href="/safety"
-              className="mt-3 flex items-center justify-center gap-1 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
-            >
-              Run Full Compliance Check
-            </Link>
-          </Card>
+              <Link
+                href="/safety"
+                className="mt-3 flex items-center justify-center gap-1 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
+              >
+                Run Full Compliance Check
+              </Link>
+            </Card>
+          )}
 
-          <Card aiGenerated>
-            <CardHeader
-              title="Shift Handover Summary"
-              icon={<Users className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
-            />
-            <p className="text-xs leading-relaxed text-text-secondary">
-              Shift A completed. Key notes: platen superheater tube leak isolated.
-              ID Fan-A showing elevated bearing temperature (82°C). Boiler excess O2 trending above the
-              3.5% dry-basis best-practice target.
-            </p>
-            <div className="mt-3 flex gap-2">
-              <button className="flex-1 rounded-md bg-accent-blue px-3 py-2 text-xs font-semibold text-white hover:bg-[#2f78e6]">
-                Acknowledge &amp; Start Shift
-              </button>
-            </div>
-            <Link href="/safety" className="mt-2 block text-center text-[11px] text-accent-blue hover:underline">
-              View Detailed Handover Log
-            </Link>
-          </Card>
+          {cards.shiftHandover && (
+            <Card aiGenerated>
+              <CardHeader
+                title="Shift Handover Summary"
+                icon={<Users className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
+              />
+              <p className="text-xs leading-relaxed text-text-secondary">
+                Shift A completed. Key notes: platen superheater tube leak isolated.
+                ID Fan-A showing elevated bearing temperature (82°C). Boiler excess O2 trending above the
+                3.5% dry-basis best-practice target.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button className="flex-1 rounded-md bg-accent-blue px-3 py-2 text-xs font-semibold text-white hover:bg-[#2f78e6]">
+                  Acknowledge &amp; Start Shift
+                </button>
+              </div>
+              <Link href="/safety" className="mt-2 block text-center text-[11px] text-accent-blue hover:underline">
+                View Detailed Handover Log
+              </Link>
+            </Card>
+          )}
+          {!cards.maintenanceCalendar && !cards.safetyCompliance && !cards.shiftHandover && (
+            <Card>
+              <p className="text-xs text-text-muted">No scheduling or compliance items relevant to your role right now.</p>
+            </Card>
+          )}
         </div>
       </div>
     </div>
