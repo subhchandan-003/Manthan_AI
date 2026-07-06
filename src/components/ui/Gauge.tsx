@@ -38,9 +38,16 @@ export function Gauge({
           strokeLinecap="round"
         />
       </svg>
-      <div className="absolute flex flex-col items-center justify-center">
+      <div className="absolute flex flex-col items-center justify-center px-2 text-center">
         <span className="font-display text-lg font-bold text-text-primary">{value}%</span>
-        {label && <span className="text-[10px] text-text-muted">{label}</span>}
+        {label && (
+          <span
+            className="mt-1 text-[9px] leading-tight text-text-muted"
+            style={{ maxWidth: size * 0.62 }}
+          >
+            {label}
+          </span>
+        )}
       </div>
     </div>
   );
