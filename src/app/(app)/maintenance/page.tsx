@@ -1,0 +1,366 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info } from "lucide-react";
+import { HealthDot } from "@/components/ui/HealthDot";
+import { Badge } from "@/components/ui/Badge";
+import { equipment, maintenanceEvents, spareParts } from "@/lib/mock-data";
+import type { EquipmentItem } from "@/lib/types";
+
+type Tab = "overview" | "history" | "recommendations" | "sops" | "spares" | "troubleshooting";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "history", label: "Maintenance History" },
+  { key: "recommendations", label: "AI Recommendations" },
+  { key: "sops", label: "Linked SOPs" },
+  { key: "spares", label: "Spare Parts" },
+  { key: "troubleshooting", label: "Troubleshooting" },
+];
+
+const eventTone = { PM: "green", CM: "amber", Overhaul: "blue", Emergency: "red" } as const;
+
+const SOP_LIBRARY: Record<string, string[]> = {
+  "21-FN-301A": ["SOP-SIPAT-DF-001: ID Fan Start/Stop Procedure", "SOP-SIPAT-DF-003: ID Fan Emergency Trip Response", "SOP-SIPAT-DF-007: Bearing Temperature High — Corrective Action"],
+};
+
+const SYMPTOMS = ["High vibration", "High bearing temp", "Abnormal noise", "Low discharge pressure", "High motor current", "Trip event"];
+
+const TROUBLESHOOT_STEPS: Record<string, { instruction: string; sop: string; safety: string }[]> = {
+  "High vibration": [
+    { instruction: "Check bearing oil level and quality", sop: "SOP-SIPAT-DF-007", safety: "Ensure fan is isolated per LOTO before opening inspection port" },
+    { instruction: "Verify coupling alignment using dial gauge", sop: "SOP-SIPAT-DF-001", safety: "Wear hearing protection near running equipment" },
+    { instruction: "Inspect fan blade for erosion or deposits", sop: "SOP-SIPAT-DF-007", safety: "Confined space entry permit required if entering fan casing" },
+  ],
+  "High bearing temp": [
+    { instruction: "Confirm lubrication system flow and pressure", sop: "SOP-SIPAT-DF-007", safety: "Allow bearing housing to cool before manual contact" },
+    { instruction: "Check cooling water supply to bearing jacket", sop: "SOP-SIPAT-DF-001", safety: "Verify isolation valves before opening cooling circuit" },
+    { instruction: "Review vibration trend for correlated rise", sop: "SOP-SIPAT-DF-007", safety: "No special precaution — remote monitoring only" },
+  ],
+};
+
+export default function MaintenancePage() {
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState(equipment[0].id);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [symptom, setSymptom] = useState("");
+  const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
+
+  const selected = equipment.find((e) => e.id === selectedId) as EquipmentItem;
+  const filtered = useMemo(
+    () =>
+      equipment.filter(
+        (e) =>
+          e.tag.toLowerCase().includes(search.toLowerCase()) ||
+          e.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    [search]
+  );
+  const history = maintenanceEvents.filter((m) => m.equipmentId === selected.id);
+  const sops = SOP_LIBRARY[selected.tag] ?? ["No SOPs linked yet — request document indexing."];
+  const steps = symptom ? TROUBLESHOOT_STEPS[symptom] ?? [] : [];
+
+  function selectEquipment(id: string) {
+    setSelectedId(id);
+    setTab("overview");
+    setSymptom("");
+    setDoneSteps(new Set());
+  }
+
+  return (
+    <div className="flex h-full min-h-0">
+      <div className="flex w-80 shrink-0 flex-col border-r border-border-subtle bg-bg-secondary">
+        <div className="border-b border-border-subtle p-3">
+          <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1.5">
+            <Search className="h-3.5 w-3.5 text-text-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by tag, name, or system..."
+              className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+            />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {filtered.map((e) => (
+            <button
+              key={e.id}
+              onClick={() => selectEquipment(e.id)}
+              className={`flex w-full items-center gap-2.5 border-b border-border-subtle px-3 py-2.5 text-left text-xs hover:bg-bg-tertiary ${
+                selected.id === e.id ? "bg-bg-tertiary" : ""
+              }`}
+            >
+              <HealthDot status={e.health} pulse={e.health === "critical"} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-[11px] text-text-secondary">{e.tag}</p>
+                <p className="truncate font-medium text-text-primary">{e.name}</p>
+                <p className="truncate text-[11px] text-text-muted">
+                  {e.system} · Next PM {e.nextPM}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="min-w-0 flex-1 overflow-y-auto p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-xl font-semibold text-text-primary">
+              {selected.tag} — {selected.name}
+            </h1>
+            <p className="mt-1 text-sm text-text-secondary">
+              {selected.system} · {selected.location}
+            </p>
+            <div className="mt-2">
+              <Badge tone={selected.health === "healthy" ? "green" : selected.health === "warning" ? "amber" : "red"}>
+                Operational — {selected.health === "healthy" ? "Normal" : selected.health === "warning" ? "Warning" : "Critical"}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href={`/chat?q=${encodeURIComponent(`Tell me about ${selected.tag} — ${selected.name}`)}`}
+              className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Ask AI
+            </Link>
+            <Link
+              href="/pid-viewer"
+              className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
+            >
+              <GitBranch className="h-3.5 w-3.5" /> View on P&amp;ID
+            </Link>
+            <button className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2f78e6]">
+              <ClipboardPlus className="h-3.5 w-3.5" /> Generate Work Order
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 flex gap-1 overflow-x-auto border-b border-border-subtle">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`shrink-0 border-b-2 px-3 py-2 text-xs font-medium ${
+                tab === t.key ? "border-b-accent-blue text-text-primary" : "border-b-transparent text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5">
+          {tab === "overview" && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
+                <h3 className="font-display text-sm font-semibold text-text-primary">Specifications</h3>
+                <dl className="mt-3 space-y-2 text-xs">
+                  <Row label="Type" value={selected.type} />
+                  <Row label="OEM" value={selected.oem} />
+                  <Row label="Commission date" value={selected.commissionDate} />
+                  <Row label="Location" value={selected.location} />
+                  <Row label="Running hours" value={`${selected.runningHours.toLocaleString()} hrs`} />
+                </dl>
+              </div>
+              <div className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
+                <h3 className="font-display text-sm font-semibold text-text-primary">Current Condition</h3>
+                <dl className="mt-3 space-y-2 text-xs">
+                  {selected.bearingTemp !== undefined && (
+                    <Row label="Bearing temperature" value={`${selected.bearingTemp}°C`} warn={selected.bearingTemp > 75} />
+                  )}
+                  {selected.vibration !== undefined && (
+                    <Row label="Vibration level" value={`${selected.vibration} mm/s`} warn={selected.vibration > 4} />
+                  )}
+                  <Row label="Running hours" value={`${selected.runningHours.toLocaleString()} hrs`} />
+                  {selected.lastTrip && <Row label="Last trip event" value={selected.lastTrip} warn />}
+                </dl>
+              </div>
+            </div>
+          )}
+
+          {tab === "history" && (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-text-muted">{history.length} maintenance events on record</p>
+              <div className="relative ml-2 flex flex-col gap-5 border-l border-border-subtle pl-5">
+                {history.length === 0 && <p className="text-sm text-text-muted">No maintenance events recorded.</p>}
+                {history.map((h) => (
+                  <div key={h.id} className="relative">
+                    <span className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full bg-bg-primary ring-2 ring-border-active" />
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-medium text-text-primary">{h.date}</span>
+                      <Badge tone={eventTone[h.type]}>{h.type}</Badge>
+                      <span className="text-text-muted">{h.durationHrs}h</span>
+                    </div>
+                    <p className="mt-1 text-sm text-text-secondary">{h.description}</p>
+                    <p className="mt-0.5 text-[11px] text-text-muted">Performed by {h.performedBy}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "recommendations" && (
+            <div className="flex flex-col gap-3">
+              {selected.health !== "healthy" && (
+                <RecCard
+                  tone="red"
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                  text={`CRITICAL: ${selected.name} showing degraded condition. Recommend immediate inspection within 48 hours.`}
+                />
+              )}
+              <RecCard
+                tone="amber"
+                icon={<AlertTriangle className="h-4 w-4" />}
+                text={`Component wear likely based on ${selected.runningHours.toLocaleString()} running hours. Schedule visual inspection during next planned shutdown.`}
+              />
+              <RecCard
+                tone="cyan"
+                icon={<Info className="h-4 w-4" />}
+                text="OEM recommends alignment/calibration check per maintenance interval. Verify against last recorded check."
+              />
+            </div>
+          )}
+
+          {tab === "sops" && (
+            <div className="flex flex-col gap-2">
+              {sops.map((s) => (
+                <Link
+                  key={s}
+                  href="/documents"
+                  className="rounded-md border border-border-subtle bg-bg-secondary p-3 text-xs text-text-primary hover:border-border-active"
+                >
+                  {s}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {tab === "spares" && (
+            <div className="overflow-hidden rounded-lg border border-border-subtle">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-bg-tertiary text-text-secondary">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Part Number</th>
+                    <th className="px-3 py-2 font-medium">Description</th>
+                    <th className="px-3 py-2 font-medium">Stock</th>
+                    <th className="px-3 py-2 font-medium">Reorder Point</th>
+                    <th className="px-3 py-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spareParts.map((p) => (
+                    <tr key={p.partNumber} className="border-t border-border-subtle bg-bg-secondary">
+                      <td className="px-3 py-2 font-mono text-text-primary">{p.partNumber}</td>
+                      <td className="px-3 py-2 text-text-secondary">{p.description}</td>
+                      <td className="px-3 py-2">
+                        <Badge tone={p.stock <= p.reorderPoint ? "amber" : "green"}>{p.stock}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-text-secondary">{p.reorderPoint}</td>
+                      <td className="px-3 py-2">
+                        <button className="rounded-md border border-border-subtle px-2 py-1 text-[11px] hover:bg-bg-tertiary">
+                          Request
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="bg-bg-secondary px-3 py-2 text-[11px] text-text-muted">
+                Based on OEM manual and consumption history
+              </p>
+            </div>
+          )}
+
+          {tab === "troubleshooting" && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+                Select the issue you&apos;re experiencing
+              </label>
+              <select
+                value={symptom}
+                onChange={(e) => {
+                  setSymptom(e.target.value);
+                  setDoneSteps(new Set());
+                }}
+                className="w-full max-w-sm rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-xs text-text-primary focus:border-border-active focus:outline-none"
+              >
+                <option value="">Choose a symptom...</option>
+                {SYMPTOMS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+
+              {symptom && steps.length === 0 && (
+                <p className="mt-4 text-sm text-text-muted">
+                  No pre-built guide for &quot;{symptom}&quot; yet — try asking the AI assistant directly.
+                </p>
+              )}
+
+              {steps.length > 0 && (
+                <div className="mt-4 flex flex-col gap-3">
+                  {steps.map((s, i) => (
+                    <div key={i} className="rounded-lg border border-border-subtle bg-bg-secondary p-3">
+                      <div className="flex items-start gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={doneSteps.has(i)}
+                          onChange={() =>
+                            setDoneSteps((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(i)) next.delete(i);
+                              else next.add(i);
+                              return next;
+                            })
+                          }
+                          className="mt-0.5 accent-[var(--accent-blue)]"
+                        />
+                        <div className="flex-1">
+                          <p className={`text-sm ${doneSteps.has(i) ? "text-text-muted line-through" : "text-text-primary"}`}>
+                            Step {i + 1}: {s.instruction}
+                          </p>
+                          <p className="mt-1 text-[11px] text-text-muted">Reference: {s.sop}</p>
+                          <p className="mt-0.5 text-[11px] text-accent-amber">⚠ {s.safety}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {doneSteps.size === steps.length && (
+                    <div className="rounded-lg border border-l-2 border-l-accent-cyan border-border-subtle bg-bg-secondary p-3 text-sm text-text-primary">
+                      All steps complete. Based on findings, recommend replacing worn components and updating
+                      the PM interval for this failure mode.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="text-text-secondary">{label}</dt>
+      <dd className={warn ? "font-medium text-accent-amber" : "font-medium text-text-primary"}>{value}</dd>
+    </div>
+  );
+}
+
+function RecCard({ tone, icon, text }: { tone: "red" | "amber" | "cyan"; icon: React.ReactNode; text: string }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-lg border border-border-subtle bg-bg-secondary p-3">
+      <span className={tone === "red" ? "text-accent-red" : tone === "amber" ? "text-accent-amber" : "text-accent-cyan"}>
+        {icon}
+      </span>
+      <p className="text-sm text-text-primary">{text}</p>
+    </div>
+  );
+}
