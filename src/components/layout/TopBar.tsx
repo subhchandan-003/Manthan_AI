@@ -28,19 +28,19 @@ export function TopBar() {
   }
 
   return (
-    <header className="relative flex h-16 shrink-0 items-center gap-4 border-b border-border-subtle bg-bg-secondary px-5">
+    <header className="relative flex h-14 shrink-0 items-center gap-2 border-b border-border-subtle bg-bg-secondary px-3 sm:h-16 sm:gap-4 sm:px-5">
       <form onSubmit={runSearch} className="max-w-md flex-1">
-        <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm text-text-muted transition-colors focus-within:border-border-active">
+        <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-2.5 py-2 text-sm text-text-muted transition-colors focus-within:border-border-active sm:px-3">
           <Search className="h-4 w-4 shrink-0" strokeWidth={1.5} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search equipment, documents, tags... (Enter asks AI)"
-            className="w-full bg-transparent text-text-primary placeholder:text-text-muted focus:outline-none"
+            placeholder="Search... (Enter asks AI)"
+            className="w-full min-w-0 bg-transparent text-text-primary placeholder:text-text-muted focus:outline-none"
           />
         </div>
       </form>
-      <div className="flex-1" />
+      <div className="hidden flex-1 sm:block" />
 
       <button
         onClick={toggleTheme}
@@ -103,8 +103,8 @@ export function TopBar() {
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center gap-2.5 border-l border-border-subtle pl-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bg-tertiary text-text-secondary">
+      <div className="flex items-center gap-2.5 border-l border-border-subtle pl-2 sm:pl-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-text-secondary">
           <User className="h-4 w-4" strokeWidth={1.5} />
         </div>
         <div className="hidden text-xs leading-tight sm:block">

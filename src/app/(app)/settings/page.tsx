@@ -202,8 +202,8 @@ export default function SettingsPage() {
             <p className="mb-4 text-xs text-text-muted">{docs.length} documents · storage 214 MB used</p>
             <div className="flex flex-col divide-y divide-border-subtle">
               {docs.map((d) => (
-                <div key={d.id} className="flex items-center justify-between py-3 text-xs">
-                  <span className="truncate text-text-primary">{d.title}</span>
+                <div key={d.id} className="flex items-center justify-between gap-3 py-3 text-xs">
+                  <span className="min-w-0 flex-1 truncate text-text-primary">{d.title}</span>
                   <div className="flex shrink-0 gap-3">
                     <button onClick={() => reprocessDocument(d.title)} className="flex items-center gap-1 text-accent-blue hover:underline">
                       <RefreshCw className="h-3 w-3" /> Reprocess

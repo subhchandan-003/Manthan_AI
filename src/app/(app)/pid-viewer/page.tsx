@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { equipment as equipmentRegistry } from "@/lib/mock-data";
 import { downloadTextFile } from "@/lib/download";
+import { Modal } from "@/components/ui/Modal";
 
 interface PidNode {
   tag: string;
@@ -64,6 +65,7 @@ export default function PidViewerPage() {
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [showFlow, setShowFlow] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
+  const [legendModalOpen, setLegendModalOpen] = useState(false);
   const [selected, setSelected] = useState<PidNode | null>(null);
   const [searchTag, setSearchTag] = useState("");
   const [tab, setTab] = useState<"documents" | "history" | "connected" | "safety">("documents");
@@ -86,6 +88,47 @@ export default function PidViewerPage() {
     downloadTextFile(`sipat-pid-XXXX-999-POM-A-004-${Date.now()}.svg`, svgString, "image/svg+xml");
     toast.success("P&ID exported", { description: "Downloaded the current view as an SVG file." });
   }
+
+  const legendBody = (
+    <>
+      <p className="mt-1 text-[11px] text-text-muted">
+        The Sipat Stage-III bidding P&amp;ID set has no built-in legend page — this is an AI-generated reference.
+      </p>
+
+      <LegendSection title="Line Types">
+        <LegendRow color="#3D4A5C" label="Major process pipe" />
+        <LegendRow color="#EF4444" label="Main steam (dashed = flow anim.)" />
+        <LegendRow color="#10B981" label="Relief / safety line" />
+        <LegendRow color="#F59E0B" label="Bypass line" />
+        <LegendRow color="#94A3B8" label="Draft / air line" />
+      </LegendSection>
+
+      <LegendSection title="Equipment Symbols">
+        <LegendRow color={NODE_COLOR.pump} label="Pump / Fan" />
+        <LegendRow color={NODE_COLOR.valve} label="Valve (gate/globe/bypass)" />
+        <LegendRow color={NODE_COLOR["heat-exchanger"]} label="Heat exchanger / desuperheater" />
+        <LegendRow color={NODE_COLOR.vessel} label="Vessel / tank" />
+        <LegendRow color={NODE_COLOR.safety} label="Safety / relief device" />
+        <LegendRow color={NODE_COLOR.instrument} label="Instrument (ISA S5.1)" />
+      </LegendSection>
+
+      <LegendSection title="Instrument Symbols (ISA S5.1)">
+        <p className="text-[11px] leading-relaxed text-text-secondary">
+          Circle = field-mounted · Circle with line = panel-mounted · Square = DCS/PLC function · Diamond =
+          computer function. Tag prefix: F=Flow, T=Temp, P=Pressure, L=Level; suffix: I=Indicator,
+          C=Controller, T=Transmitter, V=Valve, A=Alarm.
+        </p>
+      </LegendSection>
+
+      <LegendSection title="Drawing Numbering">
+        <p className="text-[11px] leading-relaxed text-text-secondary">
+          Sipat Stage-III drawings follow a UNIT-AREA-DISCIPLINE-SHEET scheme, e.g.
+          XXXX-999-POM-A-004 = Mechanical (POM) P&amp;ID sheet 004 for the common (999) area.
+          Instrumentation sheets use the POI series, electrical single-lines use POE.
+        </p>
+      </LegendSection>
+    </>
+  );
 
   return (
     <div className="flex h-full min-h-0">
@@ -128,7 +171,10 @@ export default function PidViewerPage() {
             <Waypoints className="h-3.5 w-3.5" /> Flow Paths
           </button>
           <button
-            onClick={() => setShowLegend((v) => !v)}
+            onClick={() => {
+              setShowLegend((v) => !v);
+              setLegendModalOpen(true);
+            }}
             className={`flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs ${showLegend ? "border-border-active bg-accent-blue/10 text-text-primary" : "border-border-subtle text-text-secondary"}`}
           >
             <BookOpen className="h-3.5 w-3.5" /> Legend
@@ -219,7 +265,7 @@ export default function PidViewerPage() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 16, scale: 0.97 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute right-4 top-16 z-20 w-80 rounded-lg border border-border-subtle bg-bg-elevated p-5 shadow-xl"
+              className="absolute right-4 top-16 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border-subtle bg-bg-elevated p-5 shadow-xl"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -287,44 +333,12 @@ export default function PidViewerPage() {
       {showLegend && (
         <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border-subtle bg-bg-secondary p-5 lg:block">
           <h3 className="font-display text-sm font-semibold text-text-primary">Legend</h3>
-          <p className="mt-1 text-[11px] text-text-muted">
-            The Sipat Stage-III bidding P&amp;ID set has no built-in legend page — this is an AI-generated reference.
-          </p>
-
-          <LegendSection title="Line Types">
-            <LegendRow color="#3D4A5C" label="Major process pipe" />
-            <LegendRow color="#EF4444" label="Main steam (dashed = flow anim.)" />
-            <LegendRow color="#10B981" label="Relief / safety line" />
-            <LegendRow color="#F59E0B" label="Bypass line" />
-            <LegendRow color="#94A3B8" label="Draft / air line" />
-          </LegendSection>
-
-          <LegendSection title="Equipment Symbols">
-            <LegendRow color={NODE_COLOR.pump} label="Pump / Fan" />
-            <LegendRow color={NODE_COLOR.valve} label="Valve (gate/globe/bypass)" />
-            <LegendRow color={NODE_COLOR["heat-exchanger"]} label="Heat exchanger / desuperheater" />
-            <LegendRow color={NODE_COLOR.vessel} label="Vessel / tank" />
-            <LegendRow color={NODE_COLOR.safety} label="Safety / relief device" />
-            <LegendRow color={NODE_COLOR.instrument} label="Instrument (ISA S5.1)" />
-          </LegendSection>
-
-          <LegendSection title="Instrument Symbols (ISA S5.1)">
-            <p className="text-[11px] leading-relaxed text-text-secondary">
-              Circle = field-mounted · Circle with line = panel-mounted · Square = DCS/PLC function · Diamond =
-              computer function. Tag prefix: F=Flow, T=Temp, P=Pressure, L=Level; suffix: I=Indicator,
-              C=Controller, T=Transmitter, V=Valve, A=Alarm.
-            </p>
-          </LegendSection>
-
-          <LegendSection title="Drawing Numbering">
-            <p className="text-[11px] leading-relaxed text-text-secondary">
-              Sipat Stage-III drawings follow a UNIT-AREA-DISCIPLINE-SHEET scheme, e.g.
-              XXXX-999-POM-A-004 = Mechanical (POM) P&amp;ID sheet 004 for the common (999) area.
-              Instrumentation sheets use the POI series, electrical single-lines use POE.
-            </p>
-          </LegendSection>
+          {legendBody}
         </aside>
       )}
+      <Modal open={legendModalOpen} onClose={() => setLegendModalOpen(false)} title="Legend" className="lg:hidden">
+        {legendBody}
+      </Modal>
     </div>
   );
 }

@@ -17,9 +17,11 @@ import {
   GitBranch,
   Wrench,
   Sparkles,
+  PanelRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
+import { Modal } from "@/components/ui/Modal";
 import { documents, equipment } from "@/lib/mock-data";
 
 const FOLLOW_UPS = [
@@ -40,6 +42,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<Tab>("sources");
+  const [contextOpen, setContextOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const firedInitial = useRef(false);
@@ -105,6 +108,92 @@ function ChatContent() {
 
   const isStreaming = status === "streaming" || status === "submitted";
 
+  const contextPanelBody = (
+    <>
+      <div className="flex border-b border-border-subtle text-xs">
+        {([
+          ["sources", "Sources"],
+          ["pid", "P&ID View"],
+          ["equipment", "Equipment"],
+          ["history", "History"],
+        ] as [Tab, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex-1 border-b-2 px-2 py-2.5 font-medium transition-colors ${
+              tab === key ? "border-b-accent-blue text-text-primary" : "border-b-transparent text-text-muted hover:text-text-secondary"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto p-3">
+        {tab === "sources" && (
+          <div className="flex flex-col gap-2">
+            {documents.map((d) => (
+              <div key={d.id} className="rounded-md border border-border-subtle p-2.5 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 shrink-0 text-accent-purple" />
+                  <span className="truncate font-medium text-text-primary">{d.title}</span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between">
+                  <Badge tone={docTone[d.type]}>{d.type}</Badge>
+                  <span className="text-text-muted">98% match</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {tab === "pid" && (
+          <div className="flex flex-col gap-3">
+            <div className="rounded-md border border-border-subtle bg-bg-primary p-3 text-xs text-text-secondary">
+              Drg. XXXX-999-POM-A-004 — Main Steam, HRH &amp; CRH P&amp;ID — last referenced in this conversation.
+            </div>
+            <Link
+              href="/pid-viewer"
+              className="flex items-center justify-center gap-1.5 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
+            >
+              <GitBranch className="h-3.5 w-3.5" /> Open Full P&ID Viewer
+            </Link>
+          </div>
+        )}
+        {tab === "equipment" && (
+          <div className="flex flex-col divide-y divide-border-subtle">
+            {equipment.map((e) => (
+              <Link
+                key={e.id}
+                href="/maintenance"
+                className="flex items-center gap-2 py-2 text-xs hover:bg-bg-tertiary/50"
+              >
+                <HealthDot status={e.health} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-text-primary">{e.name}</p>
+                  <p className="truncate text-text-muted">
+                    {e.tag} · Next PM {e.nextPM}
+                  </p>
+                </div>
+                <Wrench className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+              </Link>
+            ))}
+          </div>
+        )}
+        {tab === "history" && (
+          <div className="flex flex-col gap-2 text-xs">
+            {["Main steam system walkthrough", "ID Fan-A troubleshooting", "Nitrogen system hazard review"].map(
+              (h) => (
+                <div key={h} className="flex items-center gap-2 rounded-md border border-border-subtle p-2.5 hover:bg-bg-tertiary/50">
+                  <History className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                  <span className="text-text-primary">{h}</span>
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="flex h-full min-h-0">
       {/* Left: Chat */}
@@ -123,6 +212,13 @@ function ChatContent() {
               className="flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 transition-colors hover:bg-bg-tertiary"
             >
               <Plus className="h-3.5 w-3.5" /> New Chat
+            </button>
+            <button
+              onClick={() => setContextOpen(true)}
+              aria-label="Sources & context"
+              className="flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 transition-colors hover:bg-bg-tertiary md:hidden"
+            >
+              <PanelRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -247,90 +343,15 @@ function ChatContent() {
         </div>
       </div>
 
-      {/* Right: Context panel */}
+      {/* Right: Context panel (desktop) */}
       <aside className="hidden w-[340px] shrink-0 flex-col border-l border-border-subtle bg-bg-secondary md:flex">
-        <div className="flex border-b border-border-subtle text-xs">
-          {([
-            ["sources", "Sources"],
-            ["pid", "P&ID View"],
-            ["equipment", "Equipment"],
-            ["history", "History"],
-          ] as [Tab, string][]).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex-1 border-b-2 px-2 py-2.5 font-medium transition-colors ${
-                tab === key ? "border-b-accent-blue text-text-primary" : "border-b-transparent text-text-muted hover:text-text-secondary"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="flex-1 overflow-y-auto p-3">
-          {tab === "sources" && (
-            <div className="flex flex-col gap-2">
-              {documents.map((d) => (
-                <div key={d.id} className="rounded-md border border-border-subtle p-2.5 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5 shrink-0 text-accent-purple" />
-                    <span className="truncate font-medium text-text-primary">{d.title}</span>
-                  </div>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <Badge tone={docTone[d.type]}>{d.type}</Badge>
-                    <span className="text-text-muted">98% match</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {tab === "pid" && (
-            <div className="flex flex-col gap-3">
-              <div className="rounded-md border border-border-subtle bg-bg-primary p-3 text-xs text-text-secondary">
-                Drg. XXXX-999-POM-A-004 — Main Steam, HRH &amp; CRH P&amp;ID — last referenced in this conversation.
-              </div>
-              <Link
-                href="/pid-viewer"
-                className="flex items-center justify-center gap-1.5 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary hover:bg-bg-tertiary"
-              >
-                <GitBranch className="h-3.5 w-3.5" /> Open Full P&ID Viewer
-              </Link>
-            </div>
-          )}
-          {tab === "equipment" && (
-            <div className="flex flex-col divide-y divide-border-subtle">
-              {equipment.map((e) => (
-                <Link
-                  key={e.id}
-                  href="/maintenance"
-                  className="flex items-center gap-2 py-2 text-xs hover:bg-bg-tertiary/50"
-                >
-                  <HealthDot status={e.health} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-text-primary">{e.name}</p>
-                    <p className="truncate text-text-muted">
-                      {e.tag} · Next PM {e.nextPM}
-                    </p>
-                  </div>
-                  <Wrench className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-                </Link>
-              ))}
-            </div>
-          )}
-          {tab === "history" && (
-            <div className="flex flex-col gap-2 text-xs">
-              {["Main steam system walkthrough", "ID Fan-A troubleshooting", "Nitrogen system hazard review"].map(
-                (h) => (
-                  <div key={h} className="flex items-center gap-2 rounded-md border border-border-subtle p-2.5 hover:bg-bg-tertiary/50">
-                    <History className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-                    <span className="text-text-primary">{h}</span>
-                  </div>
-                )
-              )}
-            </div>
-          )}
-        </div>
+        {contextPanelBody}
       </aside>
+
+      {/* Context panel (mobile) */}
+      <Modal open={contextOpen} onClose={() => setContextOpen(false)} title="Sources & Context">
+        <div className="-mx-6 -mb-6 flex max-h-[65vh] flex-col overflow-hidden rounded-b-xl">{contextPanelBody}</div>
+      </Modal>
     </div>
   );
 }

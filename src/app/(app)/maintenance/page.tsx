@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck } from "lucide-react";
+import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -62,6 +62,7 @@ export default function MaintenancePage() {
 
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState(equipment[0].id);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
   const [symptom, setSymptom] = useState("");
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
@@ -89,6 +90,7 @@ export default function MaintenancePage() {
     setTab("overview");
     setSymptom("");
     setDoneSteps(new Set());
+    setMobileShowDetail(true);
   }
 
   function submitWorkOrder(e: React.FormEvent) {
@@ -108,8 +110,12 @@ export default function MaintenancePage() {
   }
 
   return (
-    <div className="flex h-full min-h-0">
-      <div className="flex w-80 shrink-0 flex-col border-r border-border-subtle bg-bg-secondary">
+    <div className="flex h-full min-h-0 flex-col md:flex-row">
+      <div
+        className={`w-full shrink-0 flex-col border-r border-border-subtle bg-bg-secondary md:flex md:w-80 ${
+          mobileShowDetail ? "hidden" : "flex"
+        }`}
+      >
         <div className="border-b border-border-subtle p-4">
           <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-3 py-2">
             <Search className="h-3.5 w-3.5 text-text-muted" />
@@ -143,7 +149,13 @@ export default function MaintenancePage() {
         </div>
       </div>
 
-      <div className="min-w-0 flex-1 overflow-y-auto p-6 md:p-8">
+      <div className={`min-w-0 flex-1 overflow-y-auto p-6 md:p-8 ${mobileShowDetail ? "flex flex-col" : "hidden md:flex md:flex-col"}`}>
+        <button
+          onClick={() => setMobileShowDetail(false)}
+          className="mb-4 flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-text-primary md:hidden"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Equipment list
+        </button>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-xl font-semibold text-text-primary md:text-2xl">
@@ -198,7 +210,7 @@ export default function MaintenancePage() {
 
         <div className="mt-6">
           {tab === "overview" && (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
               <div className="rounded-lg border border-border-subtle bg-bg-secondary p-5">
                 <h3 className="font-display text-sm font-semibold text-text-primary">Specifications</h3>
                 <dl className="mt-4 space-y-2.5 text-xs">

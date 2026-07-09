@@ -8,6 +8,7 @@ import { getRoleAccess, routeToNavKey } from "@/lib/roles";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { StatusBar } from "@/components/layout/StatusBar";
+import { MobileTabBar } from "@/components/layout/MobileTabBar";
 
 function Gate({ children }: { children: React.ReactNode }) {
   const { session, ready } = useSession();
@@ -61,6 +62,7 @@ function Gate({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <StatusBar />
+      <MobileTabBar />
     </div>
   );
 }

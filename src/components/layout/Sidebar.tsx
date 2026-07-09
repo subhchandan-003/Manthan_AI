@@ -39,7 +39,7 @@ export function Sidebar() {
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
       className={clsx(
-        "shrink-0 border-r border-border-subtle bg-bg-secondary transition-[width] duration-150 ease-out overflow-hidden",
+        "hidden shrink-0 border-r border-border-subtle bg-bg-secondary transition-[width] duration-150 ease-out overflow-hidden md:block",
         expanded ? "w-60" : "w-[72px]"
       )}
     >

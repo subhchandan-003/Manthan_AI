@@ -3,17 +3,21 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
+import clsx from "clsx";
 
 export function Modal({
   open,
   onClose,
   title,
   children,
+  className,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  /** Extra classes on the fixed overlay root, e.g. "lg:hidden" to only show below a breakpoint */
+  className?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -27,7 +31,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={clsx("fixed inset-0 z-50 flex items-center justify-center p-4", className)}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
