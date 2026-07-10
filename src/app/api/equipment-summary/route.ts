@@ -1,4 +1,5 @@
 import { generateObject } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { equipment, PLANT_NAME } from "@/lib/mock-data";
 import {
@@ -52,7 +53,7 @@ Analyze this equipment like a plant reliability engineer would. Ground every cla
 
   try {
     const { object } = await generateObject({
-      model: "anthropic/claude-sonnet-4.6",
+      model: anthropic("claude-sonnet-5"),
       schema: summarySchema,
       prompt,
     });

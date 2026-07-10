@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { equipment, incidents, PLANT_NAME } from "@/lib/mock-data";
 
 export const maxDuration = 30;
@@ -28,7 +29,7 @@ no preamble, no headings, just the analysis.`;
 
   try {
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4.6",
+      model: anthropic("claude-sonnet-5"),
       prompt,
     });
     return Response.json({ recommendation: text.trim() });
