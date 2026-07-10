@@ -54,6 +54,11 @@ export function DocumentViewerModal({ item, onClose }: { item: EvidenceItem | nu
                   <p className="text-xs text-text-secondary">{item.content}</p>
                   <p className="text-[11px] text-text-muted">Open the full interactive P&amp;ID viewer for annotations and flow paths.</p>
                 </div>
+              ) : item.viewerKind === "image" ? (
+                <div className="flex items-center justify-center rounded-lg border border-border-subtle bg-bg-primary p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.content} alt={item.name} className="max-h-[55vh] max-w-full rounded-md object-contain" />
+                </div>
               ) : (
                 <pre className="whitespace-pre-wrap rounded-lg border border-border-subtle bg-bg-primary p-4 font-mono text-xs leading-relaxed text-text-secondary">
                   {item.content}

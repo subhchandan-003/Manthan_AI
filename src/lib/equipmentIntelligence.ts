@@ -301,7 +301,7 @@ export interface EvidenceItem {
   date: string;
   relevance: number;
   content: string;
-  viewerKind: "text" | "pid" | "table";
+  viewerKind: "text" | "pid" | "table" | "image";
 }
 
 export function getEvidence(tag: string, workflowIncidents: WorkflowIncident[] = []): EvidenceItem[] {

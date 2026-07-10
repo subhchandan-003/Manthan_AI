@@ -22,9 +22,11 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { DocumentViewerModal } from "@/components/chat/DocumentViewerModal";
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
 import { equipment } from "@/lib/mock-data";
+import type { EvidenceItem } from "@/lib/equipmentIntelligence";
 import {
   STAGE_ORDER,
   STAGE_LABEL,
@@ -265,6 +267,7 @@ function IncidentDetail({
   const [shutdownApproved, setShutdownApproved] = useState(false);
   const [rcaDraft, setRcaDraft] = useState(incident.rca ?? draftRca(incident));
   const [capaText, setCapaText] = useState(incident.capa ?? "");
+  const [viewerAttachment, setViewerAttachment] = useState<IncidentAttachment | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const sensorInputRef = useRef<HTMLInputElement>(null);
   const findingInputRef = useRef<HTMLInputElement>(null);
@@ -349,10 +352,31 @@ function IncidentDetail({
     toast.success("Incident flagged urgent");
   }
 
-  function addAttachment(kind: IncidentAttachment["kind"], file: File) {
+  function readFileAs(file: File, as: "dataUrl" | "text"): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      if (as === "dataUrl") reader.readAsDataURL(file);
+      else reader.readAsText(file);
+    });
+  }
+
+  async function addAttachment(kind: IncidentAttachment["kind"], file: File) {
     const kindLabel = kind === "photo" ? "photo" : kind === "sensor-reading" ? "sensor reading" : "inspection finding";
+    const isImage = file.type.startsWith("image/");
+    const isText = file.type.startsWith("text/") || /\.(csv|txt)$/i.test(file.name);
+
+    const attachment: IncidentAttachment = { name: file.name, kind, size: file.size, mimeType: file.type };
+    try {
+      if (isImage) attachment.dataUrl = await readFileAs(file, "dataUrl");
+      else if (isText) attachment.textContent = await readFileAs(file, "text");
+    } catch {
+      // fall through — attachment is still recorded, just without an in-app preview
+    }
+
     onUpdate(
-      { attachments: [...incident.attachments, { name: file.name, kind }] },
+      { attachments: [...incident.attachments, attachment] },
       { actor: actorName, role, action: `Uploaded ${kindLabel}: ${file.name}` }
     );
     toast.success("Uploaded", { description: file.name });
@@ -361,8 +385,27 @@ function IncidentDetail({
   function handleFilePicked(kind: IncidentAttachment["kind"]) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) addAttachment(kind, file);
+      if (file) void addAttachment(kind, file);
       e.target.value = "";
+    };
+  }
+
+  function viewAttachment(a: IncidentAttachment): EvidenceItem {
+    const typeLabel = a.kind === "photo" ? "Photo" : a.kind === "sensor-reading" ? "Sensor Reading" : "Inspection Finding";
+    if (a.dataUrl) {
+      return { name: a.name, type: typeLabel, date: incident.createdAt, relevance: 100, content: a.dataUrl, viewerKind: "image" };
+    }
+    if (a.textContent) {
+      return { name: a.name, type: typeLabel, date: incident.createdAt, relevance: 100, content: a.textContent, viewerKind: "text" };
+    }
+    const sizeLabel = a.size ? `${(a.size / 1024).toFixed(1)} KB` : "unknown size";
+    return {
+      name: a.name,
+      type: typeLabel,
+      date: incident.createdAt,
+      relevance: 100,
+      content: `No in-app preview available for this file type${a.mimeType ? ` (${a.mimeType})` : ""}.\n\nFile: ${a.name}\nSize: ${sizeLabel}\n\nThis attachment is on record for ${incident.title}.`,
+      viewerKind: "text",
     };
   }
 
@@ -463,11 +506,17 @@ function IncidentDetail({
         <div>
           <h3 className="text-xs font-semibold text-text-primary">Attachments</h3>
           <div className="mt-2 flex flex-wrap gap-2">
-            {incident.attachments.map((a) => (
-              <Badge key={a.name} tone="neutral">
-                {a.kind === "photo" ? <Camera className="h-3 w-3" /> : a.kind === "sensor-reading" ? <Activity className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                {a.name}
-              </Badge>
+            {incident.attachments.map((a, idx) => (
+              <button
+                key={`${a.name}-${idx}`}
+                onClick={() => setViewerAttachment(a)}
+                className="transition-opacity hover:opacity-80"
+              >
+                <Badge tone="neutral">
+                  {a.kind === "photo" ? <Camera className="h-3 w-3" /> : a.kind === "sensor-reading" ? <Activity className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                  {a.name}
+                </Badge>
+              </button>
             ))}
           </div>
         </div>
@@ -654,6 +703,8 @@ function IncidentDetail({
           ))}
         </div>
       </div>
+
+      <DocumentViewerModal item={viewerAttachment ? viewAttachment(viewerAttachment) : null} onClose={() => setViewerAttachment(null)} />
     </div>
   );
 }

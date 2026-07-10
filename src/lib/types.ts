@@ -133,6 +133,12 @@ export interface IncidentActivity {
 export interface IncidentAttachment {
   name: string;
   kind: "photo" | "sensor-reading" | "finding";
+  /** Populated for real image uploads — a data URL so it can be rendered in-app */
+  dataUrl?: string;
+  /** Populated for real text/CSV uploads — raw text content for in-app preview */
+  textContent?: string;
+  size?: number;
+  mimeType?: string;
 }
 
 export interface WorkflowIncident {
