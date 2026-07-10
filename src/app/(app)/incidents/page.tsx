@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus,
@@ -265,6 +265,9 @@ function IncidentDetail({
   const [shutdownApproved, setShutdownApproved] = useState(false);
   const [rcaDraft, setRcaDraft] = useState(incident.rca ?? draftRca(incident));
   const [capaText, setCapaText] = useState(incident.capa ?? "");
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const sensorInputRef = useRef<HTMLInputElement>(null);
+  const findingInputRef = useRef<HTMLInputElement>(null);
 
   function completeReview() {
     if (!correctiveAction.trim()) return toast.error("Add a recommended corrective action first.");
@@ -346,13 +349,21 @@ function IncidentDetail({
     toast.success("Incident flagged urgent");
   }
 
-  function addAttachment(kind: IncidentAttachment["kind"]) {
-    const name = kind === "photo" ? `photo-${Date.now()}.jpg` : kind === "sensor-reading" ? `sensor-${Date.now()}.csv` : `finding-${Date.now()}.txt`;
+  function addAttachment(kind: IncidentAttachment["kind"], file: File) {
+    const kindLabel = kind === "photo" ? "photo" : kind === "sensor-reading" ? "sensor reading" : "inspection finding";
     onUpdate(
-      { attachments: [...incident.attachments, { name, kind }] },
-      { actor: actorName, role, action: `Uploaded ${kind === "photo" ? "photo" : kind === "sensor-reading" ? "sensor reading" : "inspection finding"}: ${name}` }
+      { attachments: [...incident.attachments, { name: file.name, kind }] },
+      { actor: actorName, role, action: `Uploaded ${kindLabel}: ${file.name}` }
     );
-    toast.success("Uploaded", { description: name });
+    toast.success("Uploaded", { description: file.name });
+  }
+
+  function handleFilePicked(kind: IncidentAttachment["kind"]) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) addAttachment(kind, file);
+      e.target.value = "";
+    };
   }
 
   return (
@@ -467,13 +478,35 @@ function IncidentDetail({
         <div className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
           <h3 className="text-xs font-semibold text-text-primary">Technician Actions</h3>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button onClick={() => addAttachment("photo")} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={handleFilePicked("photo")}
+            />
+            <input
+              ref={sensorInputRef}
+              type="file"
+              accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              hidden
+              onChange={handleFilePicked("sensor-reading")}
+            />
+            <input
+              ref={findingInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt,image/*"
+              hidden
+              onChange={handleFilePicked("finding")}
+            />
+            <button onClick={() => photoInputRef.current?.click()} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
               <Camera className="h-3.5 w-3.5" /> Upload Photo
             </button>
-            <button onClick={() => addAttachment("sensor-reading")} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
+            <button onClick={() => sensorInputRef.current?.click()} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
               <Activity className="h-3.5 w-3.5" /> Upload Sensor Reading
             </button>
-            <button onClick={() => addAttachment("finding")} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
+            <button onClick={() => findingInputRef.current?.click()} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
               <FileText className="h-3.5 w-3.5" /> Upload Inspection Finding
             </button>
             <button onClick={requestAssistance} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">

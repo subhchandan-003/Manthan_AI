@@ -8,11 +8,13 @@ export function Card({
   className,
   aiGenerated = false,
   noMotion = false,
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
   aiGenerated?: boolean;
   noMotion?: boolean;
+  id?: string;
 }) {
   const classes = clsx(
     "rounded-xl border border-border-subtle bg-bg-secondary p-5 md:p-6",
@@ -20,10 +22,11 @@ export function Card({
     className
   );
 
-  if (noMotion) return <div className={classes}>{children}</div>;
+  if (noMotion) return <div id={id} className={classes}>{children}</div>;
 
   return (
     <motion.div
+      id={id}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
