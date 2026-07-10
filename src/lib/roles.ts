@@ -7,6 +7,7 @@ export type NavKey =
   | "pid-viewer"
   | "maintenance"
   | "safety"
+  | "incidents"
   | "analytics"
   | "settings";
 
@@ -33,15 +34,22 @@ export interface RoleAccess {
 }
 
 /**
- * Each role only sees the domain relevant to their job:
- * - Plant Engineer: live operations reference — process, equipment context, docs. Read-only on maintenance actions, no safety admin.
+ * Each role only sees the domain relevant to their job. The Incidents workflow
+ * (src/lib/incidentWorkflow.ts) is a shared pipeline all 5 roles participate in —
+ * access to individual actions within it is gated stage-by-stage there, not here.
+ *
+ * - Technician / Shift Operator: field-level — raises incidents, uploads findings,
+ *   escalates. Read-only on Maintenance & Operations, no Safety admin, no approvals.
  * - Maintenance Engineer: full equipment health / troubleshooting / spares. No safety admin.
- * - Safety Officer: full hazard/compliance/incident/PTW authority. No maintenance actions.
- * - Shift In-Charge: broadest situational awareness (full dashboard + safety), but maintenance stays read-only — they escalate, not repair.
+ * - Plant Engineer: plant-wide operations reference, approves maintenance plans/shutdowns.
+ *   Read-only on Maintenance & Operations, no Safety admin.
+ * - Safety Officer: full hazard/compliance/PTW authority. No maintenance actions.
+ * - Maintenance Manager / Reliability Manager: final approval authority — broadest
+ *   access across Maintenance, Safety and plant-wide analytics/KPIs.
  */
 export const ROLE_ACCESS: Record<Role, RoleAccess> = {
-  "Plant Engineer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "analytics", "settings"],
+  "Technician / Shift Operator": {
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
     dashboardCards: {
@@ -51,11 +59,11 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
       recentDocuments: true,
       maintenanceCalendar: true,
       safetyCompliance: false,
-      shiftHandover: false,
+      shiftHandover: true,
     },
   },
   "Maintenance Engineer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
     maintenance: "full",
     safety: "none",
     dashboardCards: {
@@ -68,8 +76,22 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
       shiftHandover: false,
     },
   },
+  "Plant Engineer": {
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
+    maintenance: "readonly",
+    safety: "none",
+    dashboardCards: {
+      plantHealth: true,
+      activeAlerts: true,
+      aiQuickChat: true,
+      recentDocuments: true,
+      maintenanceCalendar: true,
+      safetyCompliance: false,
+      shiftHandover: false,
+    },
+  },
   "Safety Officer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "safety", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "safety", "incidents", "analytics", "settings"],
     maintenance: "none",
     safety: "full",
     dashboardCards: {
@@ -82,9 +104,9 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
       shiftHandover: false,
     },
   },
-  "Shift In-Charge": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "analytics", "settings"],
-    maintenance: "readonly",
+  "Maintenance Manager / Reliability Manager": {
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "incidents", "analytics", "settings"],
+    maintenance: "full",
     safety: "full",
     dashboardCards: {
       plantHealth: true,
@@ -99,12 +121,23 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
 };
 
 export function getRoleAccess(role: Role | undefined): RoleAccess {
-  return ROLE_ACCESS[role ?? "Plant Engineer"];
+  return ROLE_ACCESS[role ?? "Technician / Shift Operator"];
 }
+
+const KNOWN_NAV_KEYS: NavKey[] = [
+  "dashboard",
+  "chat",
+  "documents",
+  "pid-viewer",
+  "maintenance",
+  "safety",
+  "incidents",
+  "analytics",
+  "settings",
+];
 
 /** First path segment (e.g. "/maintenance/123" -> "maintenance") mapped to a NavKey, if any. */
 export function routeToNavKey(pathname: string): NavKey | null {
   const segment = pathname.split("/").filter(Boolean)[0];
-  const known: NavKey[] = ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "analytics", "settings"];
-  return (known as string[]).includes(segment) ? (segment as NavKey) : null;
+  return (KNOWN_NAV_KEYS as string[]).includes(segment) ? (segment as NavKey) : null;
 }

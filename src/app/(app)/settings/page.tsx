@@ -20,19 +20,27 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "audit", label: "Audit Log" },
 ];
 
-const ROLES: Role[] = ["Plant Engineer", "Maintenance Engineer", "Safety Officer", "Shift In-Charge"];
+const ROLES: Role[] = [
+  "Technician / Shift Operator",
+  "Maintenance Engineer",
+  "Plant Engineer",
+  "Safety Officer",
+  "Maintenance Manager / Reliability Manager",
+];
 
 const INITIAL_USERS = [
   { name: "Subhchandan Das", role: "Plant Engineer" as Role, access: "Standard" as const },
   { name: "M. Reddy", role: "Maintenance Engineer" as Role, access: "Standard" as const },
   { name: "A. Sharma", role: "Safety Officer" as Role, access: "Elevated" as const },
-  { name: "V. Nair", role: "Shift In-Charge" as Role, access: "Elevated" as const },
+  { name: "V. Nair", role: "Technician / Shift Operator" as Role, access: "Standard" as const },
+  { name: "K. Subramaniam", role: "Maintenance Manager / Reliability Manager" as Role, access: "Elevated" as const },
 ];
 
 const AUDIT_LOG = [
-  { user: "Subhchandan Das", action: "Queried AI: 'Boiler Feed Pump-A status'", time: "10:42 AM" },
+  { user: "Subhchandan Das", action: "Approved maintenance plan for Boiler excess O2 incident (WO-48213)", time: "10:42 AM" },
   { user: "M. Reddy", action: "Logged maintenance event on ID Fan-A", time: "09:15 AM" },
   { user: "A. Sharma", action: "Submitted safety checklist: Hot Work Permit", time: "08:50 AM" },
+  { user: "K. Subramaniam", action: "Published RCA to Knowledge Base: FGD absorber pH excursion", time: "08:10 AM" },
   { user: "System", action: "Re-indexed document: BHEL OEM Manual — ID Fan", time: "07:30 AM" },
 ];
 

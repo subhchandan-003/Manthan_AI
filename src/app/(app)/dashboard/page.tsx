@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   Users,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -24,9 +25,11 @@ import { HealthDot } from "@/components/ui/HealthDot";
 import { Gauge } from "@/components/ui/Gauge";
 import { useSession } from "@/lib/session";
 import { getRoleAccess } from "@/lib/roles";
-import { alerts, documents, calendarEvents } from "@/lib/mock-data";
+import { alerts, documents, calendarEvents, workflowIncidents } from "@/lib/mock-data";
+import { incidentsForRole, STAGE_LABEL } from "@/lib/incidentWorkflow";
+import type { Role } from "@/lib/types";
 
-const severityTone = { critical: "red", warning: "amber", info: "blue" } as const;
+const severityTone = { critical: "red", warning: "amber", info: "blue", high: "amber", medium: "blue", low: "neutral" } as const;
 const docStatusTone = { indexed: "green", processing: "amber", "needs-review": "red" } as const;
 const calStatusColor = { overdue: "bg-accent-red", scheduled: "bg-accent-amber", completed: "bg-accent-green" } as const;
 
@@ -45,6 +48,7 @@ export default function DashboardPage() {
   const [quickQuestion, setQuickQuestion] = useState("");
 
   const criticalCount = alerts.filter((a) => a.severity === "critical").length;
+  const myIncidents = session?.role ? incidentsForRole(workflowIncidents, session.role as Role) : [];
 
   function askAI(question: string) {
     router.push(`/chat?q=${encodeURIComponent(question)}`);
@@ -95,6 +99,34 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Column 1 */}
         <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader
+              title="Incidents Awaiting My Action"
+              icon={<ClipboardList className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
+              action={
+                <Link href="/incidents" className="text-xs text-accent-blue hover:underline">
+                  Open Workflow
+                </Link>
+              }
+            />
+            {myIncidents.length === 0 ? (
+              <p className="text-xs text-text-muted">Nothing in your queue right now.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-border-subtle">
+                {myIncidents.slice(0, 4).map((i) => (
+                  <Link key={i.id} href="/incidents" className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 transition-colors hover:bg-bg-tertiary/50">
+                    <HealthDot status={i.severity === "critical" || i.severity === "high" ? "critical" : i.severity === "medium" ? "warning" : "healthy"} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-text-primary">{i.title}</p>
+                      <span className="text-[11px] text-text-muted">{i.equipmentTag ?? "General"} · {STAGE_LABEL[i.stage]}</span>
+                    </div>
+                    <Badge tone={severityTone[i.severity]}>{i.severity}</Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Card>
+
           {cards.plantHealth && (
             <Card>
               <CardHeader title="Plant Health Overview" />

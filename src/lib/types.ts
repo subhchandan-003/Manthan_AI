@@ -1,10 +1,11 @@
 export type HealthStatus = "healthy" | "warning" | "critical";
 
 export type Role =
-  | "Plant Engineer"
+  | "Technician / Shift Operator"
   | "Maintenance Engineer"
+  | "Plant Engineer"
   | "Safety Officer"
-  | "Shift In-Charge";
+  | "Maintenance Manager / Reliability Manager";
 
 export interface Alert {
   id: string;
@@ -99,4 +100,67 @@ export interface PermitToWork {
   issuedTo: string;
   validTill: string;
   status: "active" | "closed" | "expired";
+}
+
+/**
+ * The live incident-response pipeline (distinct from the historical `Incident`
+ * RCA case-study records shown in Safety > Incident Analysis).
+ *
+ * Created -> AI Investigation -> Maintenance Engineer Review
+ *   -> Safety Officer Clearance (if required) -> Plant Engineer Approval
+ *   -> Maintenance Manager Approval (critical only) -> Maintenance Completed
+ *   -> RCA Generated -> Knowledge Saved -> Closed
+ */
+export type IncidentStage =
+  | "created"
+  | "ai-investigation"
+  | "maintenance-review"
+  | "safety-clearance"
+  | "plant-engineer-approval"
+  | "manager-approval"
+  | "maintenance-completed"
+  | "rca-generated"
+  | "knowledge-saved"
+  | "closed";
+
+export interface IncidentActivity {
+  time: string;
+  actor: string;
+  role: Role | "System";
+  action: string;
+}
+
+export interface IncidentAttachment {
+  name: string;
+  kind: "photo" | "sensor-reading" | "finding";
+}
+
+export interface WorkflowIncident {
+  id: string;
+  title: string;
+  description: string;
+  equipmentTag?: string;
+  severity: "critical" | "high" | "medium" | "low";
+  /** Critical incidents require Maintenance Manager approval before completion */
+  isCritical: boolean;
+  /** Whether this incident must pass through Safety Officer clearance */
+  requiresSafetyClearance: boolean;
+  /** A Technician flagged this as urgent / needing priority attention */
+  escalated: boolean;
+  /** Plant Engineer / Manager flagged that a shutdown is being requested & approved */
+  shutdownRequested: boolean;
+  stage: IncidentStage;
+  raisedBy: string;
+  raisedByRole: Role;
+  createdAt: string;
+  assignedTechnician?: string;
+  aiRecommendation?: string;
+  maintenanceReview?: { by: string; notes: string; correctiveAction: string };
+  safetyClearance?: { by: string; approved: boolean; ppeVerified: boolean; loto: boolean; notes: string };
+  plantEngineerApproval?: { by: string; approved: boolean; workOrderNo?: string; notes: string };
+  managerApproval?: { by: string; approved: boolean; capaApproved: boolean; notes: string };
+  rca?: string;
+  capa?: string;
+  attachments: IncidentAttachment[];
+  activityLog: IncidentActivity[];
 }

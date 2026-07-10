@@ -14,7 +14,13 @@ const PLANTS = [
   { short: "TANGEDCO Ennore SEZ", full: "TANGEDCO Ennore SEZ Supercritical TPP, Tamil Nadu" },
 ];
 
-const ROLES: Role[] = ["Plant Engineer", "Maintenance Engineer", "Safety Officer", "Shift In-Charge"];
+const ROLES: Role[] = [
+  "Technician / Shift Operator",
+  "Maintenance Engineer",
+  "Plant Engineer",
+  "Safety Officer",
+  "Maintenance Manager / Reliability Manager",
+];
 
 const STATS = [
   "15,000+ P&ID symbols recognized",
@@ -30,7 +36,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [plant, setPlant] = useState(PLANTS[0].short);
-  const [role, setRole] = useState<Role>("Plant Engineer");
+  const [role, setRole] = useState<Role>("Technician / Shift Operator");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -141,7 +147,7 @@ export default function LoginPage() {
 
           <div>
             <label className="mb-2 block text-xs font-medium text-text-secondary">Role</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {ROLES.map((r) => (
                 <label
                   key={r}
