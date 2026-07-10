@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { SessionProvider } from "@/lib/session";
+import { IncidentsProvider } from "@/lib/incidentsStore";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -45,7 +46,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans">
         <ThemeProvider>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <IncidentsProvider>{children}</IncidentsProvider>
+          </SessionProvider>
           <Toaster
             theme="system"
             position="top-right"

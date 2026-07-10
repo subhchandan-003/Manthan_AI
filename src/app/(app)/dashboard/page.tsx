@@ -24,10 +24,10 @@ import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Gauge } from "@/components/ui/Gauge";
 import { useSession } from "@/lib/session";
+import { useIncidents } from "@/lib/incidentsStore";
 import { getRoleAccess } from "@/lib/roles";
-import { alerts, documents, calendarEvents, workflowIncidents } from "@/lib/mock-data";
+import { alerts, documents, calendarEvents } from "@/lib/mock-data";
 import { incidentsForRole, STAGE_LABEL } from "@/lib/incidentWorkflow";
-import type { Role } from "@/lib/types";
 
 const severityTone = { critical: "red", warning: "amber", info: "blue", high: "amber", medium: "blue", low: "neutral" } as const;
 const docStatusTone = { indexed: "green", processing: "amber", "needs-review": "red" } as const;
@@ -41,6 +41,7 @@ const PINNED_QUESTIONS = [
 
 export default function DashboardPage() {
   const { session } = useSession();
+  const { incidents } = useIncidents();
   const router = useRouter();
   const access = getRoleAccess(session?.role);
   const cards = access.dashboardCards;
@@ -48,7 +49,7 @@ export default function DashboardPage() {
   const [quickQuestion, setQuickQuestion] = useState("");
 
   const criticalCount = alerts.filter((a) => a.severity === "critical").length;
-  const myIncidents = session?.role ? incidentsForRole(workflowIncidents, session.role as Role) : [];
+  const myIncidents = session?.role ? incidentsForRole(incidents, session.role) : [];
 
   function askAI(question: string) {
     router.push(`/chat?q=${encodeURIComponent(question)}`);

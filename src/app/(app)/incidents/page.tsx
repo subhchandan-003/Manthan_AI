@@ -23,7 +23,8 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
-import { equipment, workflowIncidents as seedIncidents } from "@/lib/mock-data";
+import { useIncidents } from "@/lib/incidentsStore";
+import { equipment } from "@/lib/mock-data";
 import {
   STAGE_ORDER,
   STAGE_LABEL,
@@ -58,15 +59,15 @@ export default function IncidentsPage() {
   const role = (session?.role ?? "Technician / Shift Operator") as Role;
   const actorName = session?.employeeName ?? "You";
 
-  const [list, setList] = useState<WorkflowIncident[]>(seedIncidents);
-  const [selectedId, setSelectedId] = useState<string | null>(seedIncidents[0]?.id ?? null);
+  const { incidents: list, addIncident, updateIncident } = useIncidents();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [filter, setFilter] = useState<"queue" | "all" | "mine">("queue");
   const [search, setSearch] = useState("");
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [investigating, setInvestigating] = useState(false);
 
-  const selected = list.find((i) => i.id === selectedId) ?? null;
+  const selected = list.find((i) => i.id === selectedId) ?? (selectedId ? null : list[0] ?? null);
 
   const filtered = useMemo(() => {
     let items = list;
@@ -78,16 +79,6 @@ export default function IncidentsPage() {
     }
     return [...items].sort((a, b) => (a.stage === "closed" ? 1 : b.stage === "closed" ? -1 : 0));
   }, [list, filter, role, actorName, search]);
-
-  function update(id: string, patch: Partial<WorkflowIncident>, activity: Omit<IncidentActivity, "time">) {
-    setList((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? { ...i, ...patch, activityLog: [...i.activityLog, { ...activity, time: now() }] }
-          : i
-      )
-    );
-  }
 
   function selectIncident(id: string) {
     setSelectedId(id);
@@ -119,7 +110,7 @@ export default function IncidentsPage() {
       attachments: [],
       activityLog: [{ time: now(), actor: actorName, role, action: "Raised incident" }],
     };
-    setList((prev) => [created, ...prev]);
+    addIncident(created);
     setSelectedId(id);
     setRaiseOpen(false);
     setMobileShowDetail(true);
@@ -132,20 +123,10 @@ export default function IncidentsPage() {
     })
       .then((r) => r.json())
       .then((data: { recommendation: string; aiUnavailable?: boolean }) => {
-        setList((prev) =>
-          prev.map((i) =>
-            i.id === id
-              ? {
-                  ...i,
-                  aiRecommendation: data.recommendation,
-                  stage: "maintenance-review",
-                  activityLog: [
-                    ...i.activityLog,
-                    { time: now(), actor: "MANTHAN AI", role: "System", action: "AI investigation complete — recommendation attached" },
-                  ],
-                }
-              : i
-          )
+        updateIncident(
+          id,
+          { aiRecommendation: data.recommendation, stage: "maintenance-review" },
+          { actor: "MANTHAN AI", role: "System", action: "AI investigation complete — recommendation attached" }
         );
         setInvestigating(false);
         return data;
@@ -243,7 +224,7 @@ export default function IncidentsPage() {
             role={role}
             actorName={actorName}
             investigating={investigating && selected.stage === "ai-investigation"}
-            onUpdate={(patch, activity) => update(selected.id, patch, activity)}
+            onUpdate={(patch, activity) => updateIncident(selected.id, patch, activity)}
           />
         )}
       </div>
