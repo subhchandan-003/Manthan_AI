@@ -22,11 +22,10 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { DocumentViewerModal } from "@/components/chat/DocumentViewerModal";
+import { DocumentViewerModal, type EvidenceItem } from "@/components/chat/DocumentViewerModal";
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
 import { equipment } from "@/lib/mock-data";
-import type { EvidenceItem } from "@/lib/equipmentIntelligence";
 import {
   STAGE_ORDER,
   STAGE_LABEL,

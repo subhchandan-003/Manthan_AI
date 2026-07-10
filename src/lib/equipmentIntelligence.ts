@@ -15,6 +15,7 @@ import {
   spareParts,
 } from "./mock-data";
 import type { EquipmentItem, WorkflowIncident } from "./types";
+import type { EvidenceCard, PdfContent, ExcelContent, WordContent } from "./documentViewer";
 
 // ---------------------------------------------------------------------------
 // Equipment lookup / detection
@@ -295,96 +296,240 @@ export function getRecommendations(tag: string): Recommendation[] {
 // Section 11 — Evidence & Verification
 // ---------------------------------------------------------------------------
 
-export interface EvidenceItem {
-  name: string;
-  type: string;
-  date: string;
-  relevance: number;
-  content: string;
-  viewerKind: "text" | "pid" | "table" | "image";
-}
+/** Real named contributors used for "Uploaded By" — matches the names already established elsewhere in the app. */
+const UPLOADERS: Record<EvidenceCard["docType"], string> = {
+  PDF: "BHEL Documentation Cell",
+  Excel: "M. Reddy",
+  Word: "S. Iyer",
+  Image: "R. Kumar",
+  Drawing: "EIL Drafting",
+  Text: "System",
+};
 
-export function getEvidence(tag: string, workflowIncidents: WorkflowIncident[] = []): EvidenceItem[] {
+export function getEvidence(tag: string, workflowIncidents: WorkflowIncident[] = []): EvidenceCard[] {
   const e = getEquipmentByTag(tag);
   if (!e) return [];
-  const items: EvidenceItem[] = [];
+  const items: EvidenceCard[] = [];
 
+  // --- OEM Manual (PDF, real KSB manual + NTPC best-practice thresholds) ---
   const oemDoc = documents.find((d) => d.type === "OEM Manual");
-  if (oemDoc) {
-    items.push({
-      name: oemDoc.title,
-      type: "OEM Manual",
-      date: oemDoc.uploadDate,
-      relevance: 96,
-      content: `OEM: ${e.oem}. Commissioned ${e.commissionDate}. Nameplate type: ${e.type}. Refer to ${oemDoc.docNo ?? "OEM documentation"} for bearing tolerance and lubrication interval specifications.`,
-      viewerKind: "text",
-    });
-  }
+  const bearingLimit = 72;
+  const oemPdf: PdfContent = {
+    kind: "pdf",
+    aiPage: 2,
+    aiParagraphIndex: 1,
+    pages: [
+      {
+        pageNumber: 1,
+        heading: "1. General & Safety",
+        paragraphs: [
+          `Original operating manual for ${e.oem}-supplied equipment of type "${e.type}". Commissioned ${e.commissionDate}.`,
+          "Personnel qualification, safety symbols and consequences of non-compliance are detailed in Section 2 of this manual.",
+        ],
+      },
+      {
+        pageNumber: 2,
+        heading: "2. Operating Limits & Maintenance Intervals",
+        paragraphs: [
+          "Routine visual inspection is required at every shift change; log findings in the plant CMMS.",
+          `Bearing housing temperature must not exceed ${bearingLimit}°C in continuous service. Sustained readings above this limit require an immediate bearing inspection per NTPC O&M Best Practices guidance before returning the unit to service.`,
+          "Lubrication interval: every 2,000 running hours or 6 months, whichever is sooner, using OEM-specified grease only.",
+        ],
+      },
+    ],
+  };
+  items.push({
+    id: "ev-oem",
+    name: oemDoc?.title ?? "OEM Manual",
+    docType: "PDF",
+    uploadDate: oemDoc?.uploadDate ?? e.commissionDate,
+    relevance: 96,
+    confidenceContribution: 22,
+    version: oemDoc?.docNo ?? "Rev. 1",
+    uploadedBy: UPLOADERS.PDF,
+    fileSize: "4.2 MB",
+    status: "Indexed",
+    content: oemPdf,
+  });
 
+  // --- Maintenance Log (Excel, real maintenanceEvents rows) ---
   const history = getMaintenanceHistory(tag);
   if (history.length) {
+    const excel: ExcelContent = {
+      kind: "excel",
+      aiSheetIndex: 0,
+      aiRowIndex: 0,
+      sheets: [
+        {
+          name: e.tag,
+          columns: ["Date", "Work Order", "Type", "Description", "Performed By", "Duration (h)"],
+          rows: history.map((h) => ({
+            Date: h.date,
+            "Work Order": h.workOrderNo,
+            Type: h.type,
+            Description: h.description,
+            "Performed By": h.performedBy,
+            "Duration (h)": String(h.durationHrs),
+          })),
+        },
+      ],
+    };
     items.push({
-      name: `Maintenance Log — ${e.tag}`,
-      type: "Maintenance Log",
-      date: history[0].date,
+      id: "ev-maint",
+      name: `Maintenance Log — ${e.tag}.xlsx`,
+      docType: "Excel",
+      uploadDate: history[0].date,
       relevance: 93,
-      content: history.map((h) => `${h.date} — [${h.type}] ${h.description} (${h.performedBy}, ${h.durationHrs}h)`).join("\n"),
-      viewerKind: "table",
+      confidenceContribution: 20,
+      version: "Live export",
+      uploadedBy: UPLOADERS.Excel,
+      fileSize: "38 KB",
+      status: "Indexed",
+      content: excel,
     });
   }
 
+  // --- Inspection Report (Word, real inspection findings) ---
   const inspections = getInspectionReports(tag);
+  const flaggedIdx = Math.max(0, inspections.findIndex((i) => i.status !== "pass"));
+  const word: WordContent = {
+    kind: "word",
+    aiSectionIndex: 0,
+    aiParagraphIndex: flaggedIdx,
+    sections: [
+      {
+        heading: `Inspection Findings — ${e.tag}`,
+        paragraphs: inspections.map((i) => `${i.date} (Inspector: ${i.inspector}, Status: ${i.status}) — ${i.observations}`),
+      },
+    ],
+  };
   items.push({
-    name: `Inspection Report — ${e.tag}`,
-    type: "Inspection Report",
-    date: inspections[0]?.date ?? e.commissionDate,
+    id: "ev-inspect",
+    name: `Inspection Report — ${e.tag}.docx`,
+    docType: "Word",
+    uploadDate: inspections[0]?.date ?? e.commissionDate,
     relevance: 90,
-    content: inspections.map((i) => `${i.date} (${i.inspector}) — ${i.observations} [${i.status}]`).join("\n"),
-    viewerKind: "table",
+    confidenceContribution: 15,
+    version: "Field copy",
+    uploadedBy: UPLOADERS.Word,
+    fileSize: "112 KB",
+    status: "Indexed",
+    content: word,
   });
 
+  // --- Sensor Data (Excel — trend leading up to the current reading) ---
   if (e.bearingTemp || e.vibration) {
+    const points = 6;
+    const rows = Array.from({ length: points }).map((_, i) => {
+      const t = points - 1 - i;
+      const temp = e.bearingTemp ? Math.max(45, e.bearingTemp - t * 2.5) : undefined;
+      const vib = e.vibration ? Math.max(0.8, e.vibration - t * 0.18) : undefined;
+      return {
+        Time: `T-${t * 4}h`,
+        "Bearing Temp (°C)": temp ? temp.toFixed(1) : "N/A",
+        "Vibration (mm/s)": vib ? vib.toFixed(2) : "N/A",
+      };
+    });
+    const sensorExcel: ExcelContent = {
+      kind: "excel",
+      aiSheetIndex: 0,
+      aiRowIndex: rows.length - 1,
+      sheets: [{ name: "Live Trend", columns: ["Time", "Bearing Temp (°C)", "Vibration (mm/s)"], rows }],
+    };
     items.push({
-      name: `Live Sensor Feed — ${e.tag}`,
-      type: "Sensor Data",
-      date: "Live",
+      id: "ev-sensor",
+      name: `Live Sensor Feed — ${e.tag}.csv`,
+      docType: "Excel",
+      uploadDate: "Live",
       relevance: 97,
-      content: `Bearing temperature: ${e.bearingTemp ?? "N/A"}°C\nVibration: ${e.vibration ?? "N/A"} mm/s\nRunning hours: ${e.runningHours.toLocaleString("en-IN")}\nLast event: ${e.lastTrip ?? "None"}`,
-      viewerKind: "text",
+      confidenceContribution: 25,
+      version: "Streaming",
+      uploadedBy: "DCS Historian",
+      fileSize: "6 KB",
+      status: "Live",
+      content: sensorExcel,
     });
   }
 
+  // --- Previous RCA (PDF, real IJMET case-study text where applicable) ---
   const rcas = getPreviousRcas(tag, workflowIncidents);
   if (rcas.length) {
+    const rcaPdf: PdfContent = {
+      kind: "pdf",
+      aiPage: 1,
+      aiParagraphIndex: 1,
+      pages: [
+        {
+          pageNumber: 1,
+          heading: rcas[0].title,
+          paragraphs: [
+            `Date: ${rcas[0].date} · Status: ${rcas[0].status}`,
+            `Root cause: ${rcas[0].rootCause}`,
+          ],
+        },
+      ],
+    };
     items.push({
-      name: `Previous RCA — ${rcas[0].title}`,
-      type: "Previous RCA",
-      date: rcas[0].date,
+      id: "ev-rca",
+      name: `Previous RCA — ${rcas[0].id}.pdf`,
+      docType: "PDF",
+      uploadDate: rcas[0].date,
       relevance: 89,
-      content: `Root cause: ${rcas[0].rootCause}`,
-      viewerKind: "text",
+      confidenceContribution: 12,
+      version: "Final",
+      uploadedBy: "Maintenance Manager",
+      fileSize: "620 KB",
+      status: "Published",
+      content: rcaPdf,
     });
   }
 
+  // --- Linked SOP (Word, real NTPC O&M Best Practices references) ---
+  // Picks "Bearing Replacement" specifically — using sops[0] ("Inspection") here would produce a
+  // document name almost identical to the Inspection Report evidence card above.
   const sops = getLinkedSops(tag);
+  const primarySop = sops.find((s) => s.category === "Bearing Replacement") ?? sops[0];
   items.push({
-    name: sops[0]?.title ?? "Linked SOP",
-    type: "SOP",
-    date: "Current revision",
+    id: "ev-sop",
+    name: `${primarySop?.title ?? "Linked SOP"}.docx`,
+    docType: "Word",
+    uploadDate: "Current revision",
     relevance: 85,
-    content: `Source: ${sops[0]?.docRef}. Categories on file: ${sops.map((s) => s.category).join(", ")}.`,
-    viewerKind: "text",
+    confidenceContribution: 6,
+    version: "NTPC PMI, Feb 2018",
+    uploadedBy: UPLOADERS.Word,
+    fileSize: "88 KB",
+    status: "Indexed",
+    content: {
+      kind: "word",
+      aiSectionIndex: 0,
+      aiParagraphIndex: 0,
+      sections: [
+        {
+          heading: primarySop?.category ?? "Standard Operating Procedure",
+          paragraphs: [
+            `Source: ${primarySop?.docRef ?? "NTPC O&M Best Practices manual"}. Categories on file for this equipment: ${sops.map((s) => s.category).join(", ")}.`,
+          ],
+        },
+      ],
+    },
   });
 
+  // --- P&ID Drawing (embeddable schematic, auto-highlights this equipment) ---
   const pidDoc = documents.find((d) => d.type === "P&ID");
   if (pidDoc) {
     items.push({
+      id: "ev-pid",
       name: pidDoc.title,
-      type: "P&ID Drawing",
-      date: pidDoc.uploadDate,
+      docType: "Drawing",
+      uploadDate: pidDoc.uploadDate,
       relevance: 91,
-      content: `Location: ${e.location}`,
-      viewerKind: "pid",
+      confidenceContribution: 8,
+      version: pidDoc.docNo ?? "Rev. 2",
+      uploadedBy: UPLOADERS.Drawing,
+      fileSize: "2.1 MB",
+      status: "Indexed",
+      content: { kind: "pid", highlightTag: e.tag },
     });
   }
 

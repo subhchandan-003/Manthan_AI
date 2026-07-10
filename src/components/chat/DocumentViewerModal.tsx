@@ -3,7 +3,16 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, FileText } from "lucide-react";
-import type { EvidenceItem } from "@/lib/equipmentIntelligence";
+
+/** Simple flat-content viewer item — used for the Incidents page's attachment viewer. */
+export interface EvidenceItem {
+  name: string;
+  type: string;
+  date: string;
+  relevance: number;
+  content: string;
+  viewerKind: "text" | "pid" | "table" | "image";
+}
 
 export function DocumentViewerModal({ item, onClose }: { item: EvidenceItem | null; onClose: () => void }) {
   useEffect(() => {

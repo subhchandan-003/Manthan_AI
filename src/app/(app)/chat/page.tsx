@@ -32,9 +32,11 @@ import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
 import { downloadTextFile, shareOrCopyLink } from "@/lib/download";
 import { documents, equipment } from "@/lib/mock-data";
-import { findEquipmentInText, type EvidenceItem } from "@/lib/equipmentIntelligence";
+import { findEquipmentInText } from "@/lib/equipmentIntelligence";
+import { buildEvidenceForDocument } from "@/lib/documentContent";
 import { EquipmentWorkspace, type AiSummary } from "@/components/chat/EquipmentWorkspace";
-import { DocumentViewerModal } from "@/components/chat/DocumentViewerModal";
+import { EvidenceDrawer } from "@/components/viewers/EvidenceDrawer";
+import type { EvidenceCard } from "@/lib/documentViewer";
 import type { EquipmentItem, WorkflowIncident } from "@/lib/types";
 
 const FOLLOW_UPS = [
@@ -79,7 +81,7 @@ function ChatContent() {
   const [tab, setTab] = useState<Tab>("sources");
   const [contextOpen, setContextOpen] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [viewerItem, setViewerItem] = useState<EvidenceItem | null>(null);
+  const [viewerEvidence, setViewerEvidence] = useState<EvidenceCard | null>(null);
   const [activeSummary, setActiveSummary] = useState<AiSummary | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -406,7 +408,7 @@ function ChatContent() {
               <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                 <EquipmentWorkspace
                   tag={activeTag}
-                  onOpenDocument={setViewerItem}
+                  onOpenDocument={setViewerEvidence}
                   onSelectEquipment={setActiveTag}
                   onGenerateRca={generateRca}
                   onCreateWorkOrder={createWorkOrder}
@@ -472,16 +474,21 @@ function ChatContent() {
                           <p className="whitespace-pre-wrap leading-relaxed">{text || (isStreaming ? "…" : "")}</p>
                           {cited.length > 0 && (
                             <div className="mt-3 flex flex-col gap-1.5 border-t border-border-subtle pt-2.5">
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">Evidence Used</p>
                               {cited.slice(0, 3).map((d) => (
-                                <Link
-                                  key={d.id}
-                                  href="/documents"
-                                  className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1.5 text-xs hover:border-border-active"
-                                >
+                                <div key={d.id} className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1.5 text-xs">
                                   <FileText className="h-3.5 w-3.5 shrink-0 text-accent-purple" />
-                                  <span className="truncate flex-1">{d.title}</span>
-                                  <Badge tone={docTone[d.type]}>{d.type}</Badge>
-                                </Link>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-text-primary">{d.title}</p>
+                                    <p className="text-[10px] text-text-muted">{d.type} · 98% relevant</p>
+                                  </div>
+                                  <button
+                                    onClick={() => setViewerEvidence(buildEvidenceForDocument(d))}
+                                    className="shrink-0 rounded-md border border-border-subtle px-2 py-1 text-[11px] font-medium text-text-primary hover:bg-bg-tertiary"
+                                  >
+                                    Open Source
+                                  </button>
+                                </div>
                               ))}
                             </div>
                           )}
@@ -585,7 +592,14 @@ function ChatContent() {
         </div>
       </Modal>
 
-      <DocumentViewerModal item={viewerItem} onClose={() => setViewerItem(null)} />
+      <EvidenceDrawer
+        evidence={viewerEvidence}
+        onClose={() => setViewerEvidence(null)}
+        onViewEquipmentSummary={(equipTag) => {
+          setViewerEvidence(null);
+          setActiveTag(equipTag);
+        }}
+      />
     </div>
   );
 }

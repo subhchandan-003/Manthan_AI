@@ -42,9 +42,9 @@ import {
   getRecommendations,
   getEvidence,
   getRelatedEquipment,
-  type EvidenceItem,
 } from "@/lib/equipmentIntelligence";
 import type { EquipmentItem } from "@/lib/types";
+import type { EvidenceCard } from "@/lib/documentViewer";
 
 const conditionIcon: Record<string, typeof Thermometer> = {
   Temperature: Thermometer,
@@ -84,6 +84,33 @@ function scrollToSection(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+const REASONING_KEYWORDS: [string, string][] = [
+  ["oem", "ev-oem"],
+  ["manual", "ev-oem"],
+  ["maintenance log", "ev-maint"],
+  ["inspection", "ev-inspect"],
+  ["sensor", "ev-sensor"],
+  ["vibration", "ev-sensor"],
+  ["rca", "ev-rca"],
+  ["root cause", "ev-rca"],
+  ["sop", "ev-sop"],
+  ["procedure", "ev-sop"],
+  ["p&id", "ev-pid"],
+  ["drawing", "ev-pid"],
+];
+
+/** Best-effort match from a free-text reasoning bullet to the evidence card it cites. */
+function matchEvidenceForReasoning(text: string, evidence: EvidenceCard[]): EvidenceCard | undefined {
+  const lower = text.toLowerCase();
+  for (const [keyword, id] of REASONING_KEYWORDS) {
+    if (lower.includes(keyword)) {
+      const match = evidence.find((ev) => ev.id === id);
+      if (match) return match;
+    }
+  }
+  return undefined;
+}
+
 export function EquipmentWorkspace({
   tag,
   onOpenDocument,
@@ -94,7 +121,7 @@ export function EquipmentWorkspace({
   onSummaryLoaded,
 }: {
   tag: string;
-  onOpenDocument: (item: EvidenceItem) => void;
+  onOpenDocument: (item: EvidenceCard) => void;
   onSelectEquipment: (tag: string) => void;
   onGenerateRca: (e: EquipmentItem) => void;
   onCreateWorkOrder: (e: EquipmentItem) => void;
@@ -260,11 +287,24 @@ export function EquipmentWorkspace({
                 Why AI generated this answer
               </button>
               {showReasoning && (
-                <ul id="section-reasoning" className="list-inside list-disc rounded-md border border-border-subtle bg-bg-primary p-3">
-                  {summary.reasoning.map((r) => (
-                    <li key={r}>{r}</li>
-                  ))}
-                </ul>
+                <div id="section-reasoning" className="flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-primary p-3">
+                  {summary.reasoning.map((r, idx) => {
+                    const matched = matchEvidenceForReasoning(r, evidence);
+                    return (
+                      <div key={idx} className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-2 last:border-0 last:pb-0">
+                        <p className="flex-1">• {r}</p>
+                        {matched && (
+                          <button
+                            onClick={() => onOpenDocument(matched)}
+                            className="shrink-0 rounded-md border border-border-subtle px-2 py-1 text-[11px] font-medium text-accent-blue hover:bg-bg-tertiary"
+                          >
+                            View Evidence
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )
@@ -399,12 +439,22 @@ export function EquipmentWorkspace({
                 <button
                   onClick={() =>
                     onOpenDocument({
-                      name: `Inspection Report — ${i.date}`,
-                      type: "Inspection Report",
-                      date: i.date,
+                      id: `ev-inspect-${idx}`,
+                      name: `Inspection Report — ${i.date}.docx`,
+                      docType: "Word",
+                      uploadDate: i.date,
                       relevance: 90,
-                      content: `Inspector: ${i.inspector}\nStatus: ${i.status}\n\nObservations:\n${i.observations}`,
-                      viewerKind: "text",
+                      confidenceContribution: 15,
+                      version: "Field copy",
+                      uploadedBy: i.inspector,
+                      fileSize: "94 KB",
+                      status: "Indexed",
+                      content: {
+                        kind: "word",
+                        aiSectionIndex: 0,
+                        aiParagraphIndex: 0,
+                        sections: [{ heading: `Inspection — ${i.date}`, paragraphs: [`Inspector: ${i.inspector} · Status: ${i.status}`, i.observations] }],
+                      },
                     })
                   }
                   className="rounded-md border border-border-subtle px-2 py-1 text-[11px] font-medium text-text-primary hover:bg-bg-tertiary"
@@ -489,24 +539,30 @@ export function EquipmentWorkspace({
         </div>
       </div>
 
-      {/* Section 11: Evidence & Verification */}
+      {/* Section 11: Evidence & Verification — every claim in the AI summary must trace back here */}
       <div id="section-evidence">
         <h3 className="mb-3 text-xs font-semibold text-text-primary">Evidence &amp; Verification</h3>
-        <div className="flex flex-col gap-2">
+        <p className="mb-3 text-[11px] text-text-muted">Every source the AI Executive Summary above drew from, with its contribution to the overall confidence score.</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {evidence.map((ev) => (
-            <div key={ev.name} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle bg-bg-secondary p-3 text-xs">
-              <div className="flex min-w-0 items-center gap-2.5">
+            <div key={ev.id} className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-bg-secondary p-3.5 text-xs">
+              <div className="flex min-w-0 items-start gap-2.5">
                 <FileText className="h-4 w-4 shrink-0 text-accent-purple" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-text-primary">{ev.name}</p>
-                  <p className="text-[11px] text-text-muted">{ev.type} · {ev.date} · {ev.relevance}% relevance</p>
+                  <p className="text-[11px] text-text-muted">{ev.docType} · {ev.uploadDate}</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] text-text-secondary">
+                <span>{ev.relevance}% relevant</span>
+                <span>·</span>
+                <span>{ev.confidenceContribution}% of AI confidence</span>
               </div>
               <button
                 onClick={() => onOpenDocument(ev)}
-                className="flex shrink-0 items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 font-medium text-text-primary hover:bg-bg-tertiary"
+                className="mt-1 flex items-center justify-center gap-1.5 rounded-md border border-border-subtle py-1.5 font-medium text-text-primary hover:bg-bg-tertiary"
               >
-                <Eye className="h-3.5 w-3.5" /> Open Document
+                <Eye className="h-3.5 w-3.5" /> Open Source
               </button>
             </div>
           ))}
