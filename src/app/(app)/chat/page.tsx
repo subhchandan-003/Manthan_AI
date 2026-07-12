@@ -54,17 +54,6 @@ const EXAMPLE_QUERIES = [
   "Show maintenance history of FGD Absorber",
 ];
 
-const QUICK_ACTION_CHIPS = [
-  "Equipment Summary",
-  "Maintenance History",
-  "Previous RCAs",
-  "Linked SOPs",
-  "View P&ID",
-  "Inspection Reports",
-  "Generate RCA",
-  "Find Similar Failures",
-];
-
 const docTone = { "P&ID": "purple", PFD: "purple", SOP: "blue", "Maintenance Log": "amber", "Safety Manual": "red", "OEM Manual": "cyan", "Inspection Report": "green", "Reference Report": "neutral" } as const;
 
 function findCitedDocs(text: string) {
@@ -157,32 +146,6 @@ function ChatContent() {
     setActiveTag(null);
     setActiveSummary(null);
     toast.success("Started a new chat");
-  }
-
-  function quickActionChip(label: string) {
-    if (!activeTag) {
-      toast.error("Search for an equipment first", { description: 'e.g. "Show everything related to ID Fan-A"' });
-      return;
-    }
-    // Equipment-scoped chips act on the already-open workspace; scrolling is handled inside it.
-    const id =
-      label === "Equipment Summary" ? "section-summary"
-      : label === "Maintenance History" ? "section-history"
-      : label === "Previous RCAs" ? "section-rca"
-      : label === "Linked SOPs" ? "section-sops"
-      : label === "Inspection Reports" ? "section-inspections"
-      : label === "Find Similar Failures" ? "section-related"
-      : null;
-    if (label === "View P&ID") {
-      window.location.href = "/pid-viewer";
-      return;
-    }
-    if (label === "Generate RCA") {
-      const e = equipment.find((x) => x.tag === activeTag);
-      if (e) generateRca(e);
-      return;
-    }
-    if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function generateRca(e: EquipmentItem) {
@@ -443,17 +406,6 @@ function ChatContent() {
                         </button>
                       ))}
                     </div>
-                    <div className="mt-2 flex max-w-xl flex-wrap justify-center gap-1.5 border-t border-border-subtle pt-4">
-                      {QUICK_ACTION_CHIPS.map((label) => (
-                        <button
-                          key={label}
-                          onClick={() => quickActionChip(label)}
-                          className="rounded-full bg-bg-tertiary px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:text-text-primary"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 )}
                 <div className="mx-auto flex max-w-3xl flex-col gap-5">
@@ -568,19 +520,6 @@ function ChatContent() {
               <Send className="h-4 w-4" />
             </button>
           </div>
-          {!activeTag && (
-            <div className="mx-auto mt-2.5 flex max-w-3xl flex-wrap gap-1.5">
-              {QUICK_ACTION_CHIPS.map((label) => (
-                <button
-                  key={label}
-                  onClick={() => quickActionChip(label)}
-                  className="rounded-full border border-border-subtle px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-border-active hover:text-text-primary"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
           <p className="mx-auto mt-1.5 max-w-3xl text-[11px] text-text-muted">
             Press Enter to send · Shift+Enter for new line
           </p>
