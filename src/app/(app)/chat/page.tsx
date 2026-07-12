@@ -30,6 +30,7 @@ import { HealthDot } from "@/components/ui/HealthDot";
 import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
+import { useVoiceInput } from "@/lib/useVoiceInput";
 import { downloadTextFile, shareOrCopyLink } from "@/lib/download";
 import { documents, equipment } from "@/lib/mock-data";
 import { findEquipmentInText } from "@/lib/equipmentIntelligence";
@@ -67,6 +68,7 @@ function ChatContent() {
   const { session } = useSession();
   const { incidents: workflowIncidents, addIncident } = useIncidents();
   const [input, setInput] = useState("");
+  const handleVoice = useVoiceInput(setInput);
   const [tab, setTab] = useState<Tab>("sources");
   const [contextOpen, setContextOpen] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -108,29 +110,6 @@ function ChatContent() {
     if (!value) return;
     runQuery(value);
     setInput("");
-  }
-
-  function handleVoice() {
-    type SpeechRecognitionLike = {
-      lang: string;
-      onresult: ((e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null;
-      start: () => void;
-    };
-    const w = window as unknown as {
-      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-      SpeechRecognition?: new () => SpeechRecognitionLike;
-    };
-    const SpeechRecognitionCtor = w.webkitSpeechRecognition ?? w.SpeechRecognition;
-    if (!SpeechRecognitionCtor) {
-      alert("Voice input isn't supported in this browser. Try Chrome.");
-      return;
-    }
-    const recognition = new SpeechRecognitionCtor();
-    recognition.lang = "en-IN";
-    recognition.onresult = (e) => {
-      setInput(e.results[0][0].transcript);
-    };
-    recognition.start();
   }
 
   function handleFileAttach(e: React.ChangeEvent<HTMLInputElement>) {

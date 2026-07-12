@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { FileText, LayoutGrid, List, Search, Download, MessageSquare } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -42,11 +43,26 @@ const statusTone = { indexed: "green", processing: "amber", "needs-review": "red
 
 // DOCUMENT_CONTENT lives in @/lib/documentContent so the Chat page's evidence viewer can share it.
 
-export default function DocumentsPage() {
+function DocumentsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [typeFilter, setTypeFilter] = useState<(typeof TYPES)[number]>("All");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
+
+  useEffect(() => {
+    const docId = searchParams.get("doc");
+    if (!docId) return;
+    const match = documents.find((d) => d.id === docId);
+    if (!match) return;
+    if (match.type === "P&ID") {
+      router.replace("/pid-viewer");
+      return;
+    }
+    setPreviewDoc(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const filtered = useMemo(
     () =>
@@ -241,5 +257,13 @@ ${d.tagsIdentified ? `Equipment tags identified: ${d.tagsIdentified}\n` : ""}${
         )}
       </Modal>
     </div>
+  );
+}
+
+export default function DocumentsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DocumentsContent />
+    </Suspense>
   );
 }

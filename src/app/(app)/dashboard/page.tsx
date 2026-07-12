@@ -12,19 +12,23 @@ import {
   GitBranch,
   ArrowRight,
   Mic,
+  Send,
   FileText,
   CalendarClock,
   ClipboardCheck,
   Users,
   CheckCircle2,
   ClipboardList,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Gauge } from "@/components/ui/Gauge";
+import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
+import { useVoiceInput } from "@/lib/useVoiceInput";
 import { getRoleAccess } from "@/lib/roles";
 import { alerts, documents, calendarEvents } from "@/lib/mock-data";
 import { incidentsForRole, STAGE_LABEL } from "@/lib/incidentWorkflow";
@@ -47,6 +51,8 @@ export default function DashboardPage() {
   const cards = access.dashboardCards;
   const [shiftAcknowledged, setShiftAcknowledged] = useState(false);
   const [quickQuestion, setQuickQuestion] = useState("");
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
 
   const criticalCount = alerts.filter((a) => a.severity === "critical").length;
   const myIncidents = session?.role ? incidentsForRole(incidents, session.role) : [];
@@ -60,6 +66,8 @@ export default function DashboardPage() {
     if (!quickQuestion.trim()) return;
     askAI(quickQuestion);
   }
+
+  const startVoiceInput = useVoiceInput((text) => setQuickQuestion(text));
 
   function acknowledgeShift() {
     setShiftAcknowledged(true);
@@ -135,15 +143,15 @@ export default function DashboardPage() {
                 <Gauge value={87} size={128} color="var(--accent-cyan)" label="Overall Equipment Effectiveness" />
               </div>
               <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-                <Link href="/maintenance" className="rounded-md p-2.5 transition-colors hover:bg-bg-tertiary">
+                <Link href={`/maintenance?tag=${encodeURIComponent("Platen Superheater")}`} className="rounded-md p-2.5 transition-colors hover:bg-bg-tertiary">
                   <Gauge value={92} size={60} stroke={5} color="var(--accent-green)" />
                   <div className="mt-1.5 text-[11px] text-text-secondary">Boiler</div>
                 </Link>
-                <Link href="/maintenance" className="rounded-md p-2.5 transition-colors hover:bg-bg-tertiary">
+                <Link href={`/maintenance?tag=${encodeURIComponent("HP/IP Turbine")}`} className="rounded-md p-2.5 transition-colors hover:bg-bg-tertiary">
                   <Gauge value={78} size={60} stroke={5} color="var(--accent-amber)" />
                   <div className="mt-1.5 text-[11px] text-text-secondary">Turbine</div>
                 </Link>
-                <Link href="/maintenance" className="rounded-md p-2.5 transition-colors hover:bg-bg-tertiary">
+                <Link href={`/maintenance?tag=${encodeURIComponent("Cooling System Fan")}`} className="rounded-md p-2.5 transition-colors hover:bg-bg-tertiary">
                   <Gauge value={95} size={60} stroke={5} color="var(--accent-green)" />
                   <div className="mt-1.5 text-[11px] text-text-secondary">BOP</div>
                 </Link>
@@ -155,11 +163,9 @@ export default function DashboardPage() {
             <CardHeader
               title="Active Alerts"
               action={
-                access.safety !== "none" && (
-                  <Link href="/safety" className="text-xs text-accent-blue hover:underline">
-                    View All
-                  </Link>
-                )
+                <button onClick={() => setAlertsOpen(true)} className="text-xs text-accent-blue hover:underline">
+                  View All
+                </button>
               }
             />
             <div className="flex flex-col divide-y divide-border-subtle">
@@ -225,8 +231,11 @@ export default function DashboardPage() {
                 placeholder="Ask anything about your plant..."
                 className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
               />
-              <button type="submit" aria-label="Ask" className="text-text-muted transition-colors hover:text-accent-cyan">
+              <button type="button" onClick={startVoiceInput} aria-label="Voice input" title="Speak your question" className="text-text-muted transition-colors hover:text-accent-cyan">
                 <Mic className="h-4 w-4" />
+              </button>
+              <button type="submit" disabled={!quickQuestion.trim()} aria-label="Ask" className="rounded-md bg-accent-blue p-1.5 text-white disabled:opacity-40">
+                <Send className="h-3.5 w-3.5" />
               </button>
             </form>
             <Link href="/chat" className="mt-4 flex items-center gap-1 text-xs font-medium text-accent-blue hover:underline">
@@ -247,7 +256,7 @@ export default function DashboardPage() {
               {documents.slice(0, 5).map((d) => (
                 <Link
                   key={d.id}
-                  href="/documents"
+                  href={`/documents?doc=${d.id}`}
                   className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 transition-colors hover:bg-bg-tertiary/50"
                 >
                   <FileText className="h-4 w-4 shrink-0 text-accent-purple" strokeWidth={1.5} />
@@ -272,9 +281,9 @@ export default function DashboardPage() {
                 title="Maintenance Calendar"
                 icon={<CalendarClock className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />}
                 action={
-                  <Link href="/maintenance" className="text-xs text-accent-blue hover:underline">
+                  <button onClick={() => setScheduleOpen(true)} className="text-xs text-accent-blue hover:underline">
                     View Full Schedule
-                  </Link>
+                  </button>
                 }
               />
               <div className="flex flex-col gap-3">
@@ -358,7 +367,7 @@ export default function DashboardPage() {
                   )}
                 </motion.button>
               </div>
-              <Link href="/safety" className="mt-3 block text-center text-[11px] text-accent-blue hover:underline">
+              <Link href={access.safety !== "none" ? "/safety" : "/incidents"} className="mt-3 block text-center text-[11px] text-accent-blue hover:underline">
                 View Detailed Handover Log
               </Link>
             </Card>
@@ -370,6 +379,49 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Full Maintenance Schedule">
+        <div className="flex flex-col divide-y divide-border-subtle">
+          {calendarEvents.map((c) => (
+            <div key={c.id} className="flex items-center gap-3 py-2.5 text-xs first:pt-0 last:pb-0">
+              <span className={`h-2 w-2 rounded-full shrink-0 ${calStatusColor[c.status]}`} />
+              <span className="flex-1 text-text-primary">{c.title}</span>
+              <Badge tone={c.status === "overdue" ? "red" : c.status === "completed" ? "green" : "amber"}>{c.status}</Badge>
+              <span className="shrink-0 text-text-muted">
+                {new Date(c.date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+              </span>
+            </div>
+          ))}
+        </div>
+        <Link
+          href="/maintenance"
+          onClick={() => setScheduleOpen(false)}
+          className="mt-4 flex items-center justify-center gap-1 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+        >
+          Open Equipment Maintenance View
+        </Link>
+      </Modal>
+
+      <Modal open={alertsOpen} onClose={() => setAlertsOpen(false)} title="All Active Alerts">
+        <div className="flex flex-col divide-y divide-border-subtle">
+          {alerts.map((a) => (
+            <div key={a.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+              {a.severity === "critical" ? (
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-red" />
+              ) : (
+                <HealthDot status={a.severity === "warning" ? "warning" : "healthy"} />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-text-primary">{a.text}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  {a.tag && <Badge tone={severityTone[a.severity]}>{a.tag}</Badge>}
+                  <span className="text-[11px] text-text-muted">{a.timestamp}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
@@ -55,8 +56,9 @@ const TROUBLESHOOT_STEPS: Record<string, { instruction: string; sop: string; saf
 
 const READONLY_HIDDEN_TABS: Tab[] = ["spares", "troubleshooting"];
 
-export default function MaintenancePage() {
+function MaintenanceContent() {
   const { session } = useSession();
+  const searchParams = useSearchParams();
   const isReadOnly = getRoleAccess(session?.role).maintenance === "readonly";
   const visibleTabs = isReadOnly ? TABS.filter((t) => !READONLY_HIDDEN_TABS.includes(t.key)) : TABS;
 
@@ -70,6 +72,17 @@ export default function MaintenancePage() {
   const [woDescription, setWoDescription] = useState("");
   const [woPriority, setWoPriority] = useState("Medium");
   const [requestedParts, setRequestedParts] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const tag = searchParams.get("tag");
+    if (!tag) return;
+    const match = equipment.find((e) => e.tag === tag);
+    if (match) {
+      setSelectedId(match.id);
+      setMobileShowDetail(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const selected = equipment.find((e) => e.id === selectedId) as EquipmentItem;
   const filtered = useMemo(
@@ -453,6 +466,14 @@ export default function MaintenancePage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function MaintenancePage() {
+  return (
+    <Suspense fallback={null}>
+      <MaintenanceContent />
+    </Suspense>
   );
 }
 
