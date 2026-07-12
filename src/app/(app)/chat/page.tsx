@@ -76,7 +76,7 @@ type Tab = "sources" | "pid" | "equipment" | "history";
 function ChatContent() {
   const searchParams = useSearchParams();
   const { session } = useSession();
-  const { addIncident } = useIncidents();
+  const { incidents: workflowIncidents, addIncident } = useIncidents();
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<Tab>("sources");
   const [contextOpen, setContextOpen] = useState(false);
@@ -186,6 +186,13 @@ function ChatContent() {
   }
 
   function generateRca(e: EquipmentItem) {
+    const existing = workflowIncidents.find(
+      (i) => i.equipmentTag === e.tag && i.title === `AI-Requested RCA — ${e.tag}` && i.stage !== "closed"
+    );
+    if (existing) {
+      toast.info("RCA already in progress", { description: `${e.tag} already has an open AI-requested RCA — view it in Incident Workflow.` });
+      return;
+    }
     const id = `wf-${Date.now()}`;
     const created: WorkflowIncident = {
       id,

@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
+import { useIncidents } from "@/lib/incidentsStore";
 import { documents as initialDocuments } from "@/lib/mock-data";
 import type { Role } from "@/lib/types";
 
@@ -47,6 +48,7 @@ const AUDIT_LOG = [
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("plant");
   const { session, logout } = useSession();
+  const { resetIncidents } = useIncidents();
 
   const [plantForm, setPlantForm] = useState({
     plantName: session?.plantName ?? "",
@@ -244,12 +246,23 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <button
-        onClick={logout}
-        className="mt-8 flex items-center gap-1.5 rounded-md border border-border-subtle px-3.5 py-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
-      >
-        <LogOut className="h-3.5 w-3.5" /> Log Out
-      </button>
+      <div className="mt-8 flex flex-wrap gap-2.5">
+        <button
+          onClick={logout}
+          className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3.5 py-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+        >
+          <LogOut className="h-3.5 w-3.5" /> Log Out
+        </button>
+        <button
+          onClick={() => {
+            resetIncidents();
+            toast.success("Incident workflow data reset", { description: "Cleared test/demo incidents back to the seed dataset." });
+          }}
+          className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3.5 py-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Reset Incident Workflow Data
+        </button>
+      </div>
 
       <Modal open={addUserOpen} onClose={() => setAddUserOpen(false)} title="Add User">
         <form onSubmit={addUser} className="flex flex-col gap-4 text-xs">
