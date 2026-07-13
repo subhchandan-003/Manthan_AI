@@ -64,7 +64,7 @@ Analyze this equipment like a plant reliability engineer would. Ground every cla
       recentMaintenance: history[0] ? `Last activity: ${history[0].date} — ${history[0].description}` : "No recent maintenance on record.",
       knownIssues: e.lastTrip ?? "None on record.",
       failureTrends: "AI analysis unavailable — showing data-derived summary only.",
-      recommendedActions: ["Check maintenance history", "Review inspection reports", "Generate RCA if issues persist"],
+      recommendedActions: ["Check maintenance history", "Review inspection reports", "Request AI investigation if issues persist"],
       reasoning: ["AI Gateway unavailable — this summary was assembled directly from equipment records without model analysis."],
       confidence: 60,
       aiUnavailable: true,

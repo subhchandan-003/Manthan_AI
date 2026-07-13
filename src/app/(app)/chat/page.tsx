@@ -50,7 +50,7 @@ const EXAMPLE_QUERIES = [
   "Show everything related to ID Fan-A",
   "Explain Boiler Feed Pump-A",
   "Show previous failures of Purge Fan No. 12 (East)",
-  "Generate RCA for Platen Superheater",
+  "Ask AI to investigate Platen Superheater",
   "Why is ID Fan-A vibrating?",
   "Show maintenance history of FGD Absorber",
 ];
@@ -134,16 +134,16 @@ function ChatContent() {
 
   function generateRca(e: EquipmentItem) {
     const existing = workflowIncidents.find(
-      (i) => i.equipmentTag === e.tag && i.title === `AI-Requested RCA — ${e.tag}` && i.stage !== "closed"
+      (i) => i.equipmentTag === e.tag && i.title === `AI Investigation Requested — ${e.tag}` && i.stage !== "closed"
     );
     if (existing || rcaRequestedFor.current.has(e.tag)) {
-      toast.info("RCA already in progress", { description: `${e.tag} already has an open AI-requested RCA — view it in Incident Workflow.` });
+      toast.info("AI investigation already in progress", { description: `${e.tag} already has an open AI investigation request — view it in Incident Workflow.` });
       return;
     }
     rcaRequestedFor.current.add(e.tag);
     const id = `wf-${Date.now()}`;
-    const title = `AI-Requested RCA — ${e.tag}`;
-    const description = `RCA requested from the Equipment Intelligence Workspace for ${e.tag} (${e.name}).`;
+    const title = `AI Investigation Requested — ${e.tag}`;
+    const description = `AI investigation requested from the Equipment Intelligence Workspace for ${e.tag} (${e.name}).`;
     const created: WorkflowIncident = {
       id,
       title,
@@ -159,7 +159,7 @@ function ChatContent() {
       raisedByRole: session?.role ?? "Technician / Shift Operator",
       createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
       attachments: [],
-      activityLog: [{ time: new Date().toLocaleString("en-IN"), actor: session?.employeeName ?? "You", role: session?.role ?? "Technician / Shift Operator", action: "Requested RCA from Equipment Intelligence Workspace" }],
+      activityLog: [{ time: new Date().toLocaleString("en-IN"), actor: session?.employeeName ?? "You", role: session?.role ?? "Technician / Shift Operator", action: "Requested AI investigation from Equipment Intelligence Workspace" }],
     };
     addIncident(created);
 
@@ -183,7 +183,7 @@ function ChatContent() {
 
     toast.promise(investigatePromise, {
       loading: `AI investigating ${e.tag}...`,
-      success: `RCA requested — AI investigation complete, routed to Maintenance Engineer`,
+      success: `AI investigation complete — routed to Maintenance Engineer`,
       error: "AI investigation unavailable — routed to Maintenance Engineer for manual review",
     });
   }
@@ -322,7 +322,7 @@ function ChatContent() {
     <div className="flex flex-col gap-2 p-3">
       {showLabel && <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">Action Panel</p>}
       <button onClick={() => generateRca(activeEquipment)} className="flex items-center gap-2 rounded-md border border-border-subtle px-3 py-2 text-left text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
-        <Sparkles className="h-3.5 w-3.5 text-accent-cyan" /> Generate RCA
+        <Sparkles className="h-3.5 w-3.5 text-accent-cyan" /> Ask AI to Investigate
       </button>
       <button onClick={() => createWorkOrder(activeEquipment)} className="flex items-center gap-2 rounded-md border border-border-subtle px-3 py-2 text-left text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
         <ClipboardPlus className="h-3.5 w-3.5" /> Create Work Order

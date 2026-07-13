@@ -76,7 +76,7 @@ const QUICK_ACTIONS: { key: string; label: string; target?: string }[] = [
   { key: "sops", label: "Linked SOPs", target: "section-sops" },
   { key: "pid", label: "View P&ID" },
   { key: "inspections", label: "Inspection Reports", target: "section-inspections" },
-  { key: "generate-rca", label: "Generate RCA" },
+  { key: "generate-rca", label: "Ask AI to Investigate" },
   { key: "similar", label: "Find Similar Failures", target: "section-related" },
 ];
 
@@ -235,7 +235,7 @@ export function EquipmentWorkspace({
             <GitBranch className="h-3.5 w-3.5" /> View P&amp;ID
           </Link>
           <button onClick={() => onGenerateRca(e)} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
-            <Sparkles className="h-3.5 w-3.5" /> Generate RCA
+            <Sparkles className="h-3.5 w-3.5" /> Ask AI to Investigate
           </button>
           <button onClick={() => onCreateWorkOrder(e)} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
             <ClipboardPlus className="h-3.5 w-3.5" /> Create Work Order
@@ -586,7 +586,7 @@ export function EquipmentWorkspace({
           {[
             { label: "View OEM Manual", action: () => scrollToSection("section-evidence") },
             { label: "Check Maintenance History", action: () => scrollToSection("section-history") },
-            { label: "Generate RCA", action: () => onGenerateRca(e) },
+            { label: "Ask AI to Investigate", action: () => onGenerateRca(e) },
             { label: "Compare Previous Failures", action: () => scrollToSection("section-related") },
             { label: "View P&ID", action: () => (window.location.href = "/pid-viewer") },
             { label: "Open Inspection Report", action: () => scrollToSection("section-inspections") },
