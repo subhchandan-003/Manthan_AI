@@ -585,6 +585,48 @@ export const workflowIncidents: WorkflowIncident[] = [
       { time: "2026-06-29 09:05", actor: "K. Subramaniam", role: "Maintenance Manager / Reliability Manager", action: "Closed incident" },
     ],
   },
+  {
+    id: "wf-7",
+    title: "Boiler Feed Pump-A — mechanical seal weeping",
+    description: "Mechanical seal on BFP-A observed weeping during morning round. Standby pump BFP-B healthy; repair window approved for this shift.",
+    equipmentTag: "Boiler Feed Pump-A",
+    severity: "high",
+    isCritical: true,
+    requiresSafetyClearance: false,
+    escalated: false,
+    shutdownRequested: false,
+    stage: "assigned-for-repair",
+    raisedBy: "P. Verma",
+    raisedByRole: "Technician / Shift Operator",
+    createdAt: "2026-07-11 07:30",
+    assignedTechnician: "R. Kumar",
+    aiRecommendation: "Seal weeping without a temperature or vibration trend shift typically indicates a seal-face wear issue rather than bearing distress. Recommend mechanical seal replacement during the current standby window on BFP-B.",
+    maintenanceReview: {
+      by: "S. Iyer",
+      notes: "Confirmed BFP-B is healthy and can carry full load. Seal replacement can proceed on BFP-A this shift.",
+      correctiveAction: "Replace mechanical seal on BFP-A; verify no leakage on restart.",
+    },
+    plantEngineerApproval: {
+      by: "Subhchandan Das",
+      approved: true,
+      workOrderNo: "WO-48260",
+      notes: "Approved — BFP-B covers load during the repair window.",
+    },
+    managerApproval: {
+      by: "K. Subramaniam",
+      approved: true,
+      capaApproved: true,
+      notes: "Approved — critical equipment, standby pump confirmed healthy before proceeding.",
+    },
+    attachments: [{ name: "bfp-a-seal-weep.jpg", kind: "photo" }],
+    activityLog: [
+      { time: "2026-07-11 07:30", actor: "P. Verma", role: "Technician / Shift Operator", action: "Raised incident" },
+      { time: "2026-07-11 07:31", actor: "MANTHAN AI", role: "System", action: "AI investigation complete — recommendation attached" },
+      { time: "2026-07-11 08:15", actor: "S. Iyer", role: "Maintenance Engineer", action: "Completed review — routed to Plant Engineer" },
+      { time: "2026-07-11 09:00", actor: "Subhchandan Das", role: "Plant Engineer", action: "Approved maintenance plan, created WO-48260 — escalated to Maintenance Manager" },
+      { time: "2026-07-11 09:30", actor: "K. Subramaniam", role: "Maintenance Manager / Reliability Manager", action: "Final approval granted (CAPA ✓, Work Order ✓, Shutdown –) — assigned to Technician for repair" },
+    ],
+  },
 ];
 
 export const complianceRows: ComplianceRow[] = [

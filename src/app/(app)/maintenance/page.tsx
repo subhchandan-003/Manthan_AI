@@ -4,12 +4,14 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft } from "lucide-react";
+import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft, Siren } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
 import { getRoleAccess } from "@/lib/roles";
+import { useIncidents } from "@/lib/incidentsStore";
+import { STAGE_LABEL } from "@/lib/incidentWorkflow";
 import { equipment, maintenanceEvents, spareParts } from "@/lib/mock-data";
 import type { EquipmentItem } from "@/lib/types";
 
@@ -59,6 +61,7 @@ const READONLY_HIDDEN_TABS: Tab[] = ["spares", "troubleshooting"];
 function MaintenanceContent() {
   const { session } = useSession();
   const searchParams = useSearchParams();
+  const { incidents } = useIncidents();
   const isReadOnly = getRoleAccess(session?.role).maintenance === "readonly";
   const visibleTabs = isReadOnly ? TABS.filter((t) => !READONLY_HIDDEN_TABS.includes(t.key)) : TABS;
 
@@ -95,6 +98,7 @@ function MaintenanceContent() {
     [search]
   );
   const history = maintenanceEvents.filter((m) => m.equipmentId === selected.id);
+  const activeIncidents = incidents.filter((i) => i.equipmentTag === selected.tag && i.stage !== "closed");
   const sops = SOP_LIBRARY[selected.tag] ?? ["No SOPs linked yet — request document indexing."];
   const steps = symptom ? TROUBLESHOOT_STEPS[symptom] ?? [] : [];
 
@@ -223,7 +227,29 @@ function MaintenanceContent() {
 
         <div className="mt-6">
           {tab === "overview" && (
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <div className="flex flex-col gap-5">
+              {activeIncidents.length > 0 && (
+                <Link
+                  href={`/incidents?tag=${encodeURIComponent(selected.tag)}`}
+                  className="flex items-start gap-3 rounded-lg border border-l-2 border-l-accent-red border-border-subtle bg-accent-red/5 p-4 transition-colors hover:bg-accent-red/10"
+                >
+                  <Siren className="mt-0.5 h-4 w-4 shrink-0 text-accent-red" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-text-primary">
+                      {activeIncidents.length} active incident{activeIncidents.length > 1 ? "s" : ""} on this equipment
+                    </p>
+                    <div className="mt-1.5 flex flex-col gap-1">
+                      {activeIncidents.map((i) => (
+                        <p key={i.id} className="text-[11px] text-text-secondary">
+                          {i.title} — <span className="text-text-muted">{STAGE_LABEL[i.stage]}</span>
+                        </p>
+                      ))}
+                    </div>
+                    <p className="mt-1.5 text-[11px] font-medium text-accent-red">View in Incident Workflow →</p>
+                  </div>
+                </Link>
+              )}
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
               <div className="rounded-lg border border-border-subtle bg-bg-secondary p-5">
                 <h3 className="font-display text-sm font-semibold text-text-primary">Specifications</h3>
                 <dl className="mt-4 space-y-2.5 text-xs">
@@ -246,6 +272,7 @@ function MaintenanceContent() {
                   <Row label="Running hours" value={`${selected.runningHours.toLocaleString()} hrs`} />
                   {selected.lastTrip && <Row label="Last trip event" value={selected.lastTrip} warn />}
                 </dl>
+              </div>
               </div>
             </div>
           )}

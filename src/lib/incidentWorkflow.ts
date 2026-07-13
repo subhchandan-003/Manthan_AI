@@ -7,6 +7,7 @@ export const STAGE_ORDER: IncidentStage[] = [
   "safety-clearance",
   "plant-engineer-approval",
   "manager-approval",
+  "assigned-for-repair",
   "maintenance-completed",
   "rca-generated",
   "knowledge-saved",
@@ -20,6 +21,7 @@ export const STAGE_LABEL: Record<IncidentStage, string> = {
   "safety-clearance": "Safety Officer Clearance",
   "plant-engineer-approval": "Plant Engineer Approval",
   "manager-approval": "Maintenance Manager Approval",
+  "assigned-for-repair": "Assigned for Repair",
   "maintenance-completed": "Maintenance Completed",
   "rca-generated": "RCA Generated",
   "knowledge-saved": "Knowledge Saved",
@@ -49,6 +51,8 @@ export function actionableRole(incident: WorkflowIncident): Role | null {
       return "Plant Engineer";
     case "manager-approval":
       return "Maintenance Manager / Reliability Manager";
+    case "assigned-for-repair":
+      return "Technician / Shift Operator";
     case "maintenance-completed":
       return "Maintenance Engineer";
     case "rca-generated":
@@ -79,7 +83,7 @@ export function nextStageAfterReview(incident: WorkflowIncident): IncidentStage 
 }
 
 export function nextStageAfterApproval(incident: WorkflowIncident): IncidentStage {
-  return incident.isCritical ? "manager-approval" : "maintenance-completed";
+  return incident.isCritical ? "manager-approval" : "assigned-for-repair";
 }
 
 export function draftRca(incident: WorkflowIncident): string {

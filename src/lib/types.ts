@@ -108,8 +108,10 @@ export interface PermitToWork {
  *
  * Created -> AI Investigation -> Maintenance Engineer Review
  *   -> Safety Officer Clearance (if required) -> Plant Engineer Approval
- *   -> Maintenance Manager Approval (critical only) -> Maintenance Completed
- *   -> RCA Generated -> Knowledge Saved -> Closed
+ *   -> Maintenance Manager Approval (critical only) -> Assigned for Repair
+ *   (Technician executes the physical work) -> Maintenance Completed
+ *   (Maintenance Engineer verifies + drafts RCA) -> RCA Generated
+ *   -> Knowledge Saved -> Closed
  */
 export type IncidentStage =
   | "created"
@@ -118,6 +120,7 @@ export type IncidentStage =
   | "safety-clearance"
   | "plant-engineer-approval"
   | "manager-approval"
+  | "assigned-for-repair"
   | "maintenance-completed"
   | "rca-generated"
   | "knowledge-saved"
@@ -165,6 +168,8 @@ export interface WorkflowIncident {
   safetyClearance?: { by: string; approved: boolean; ppeVerified: boolean; loto: boolean; notes: string };
   plantEngineerApproval?: { by: string; approved: boolean; workOrderNo?: string; notes: string };
   managerApproval?: { by: string; approved: boolean; capaApproved: boolean; notes: string };
+  /** Filled in by the Technician when they mark the physical repair complete */
+  repairCompletion?: { by: string; notes: string };
   rca?: string;
   capa?: string;
   attachments: IncidentAttachment[];

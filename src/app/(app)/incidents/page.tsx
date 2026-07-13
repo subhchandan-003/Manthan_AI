@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Plus,
@@ -19,6 +21,7 @@ import {
   ArrowUpCircle,
   FileText,
   ClipboardCheck,
+  Wrench,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -45,6 +48,7 @@ const stageTone: Record<IncidentStage, "neutral" | "blue" | "amber" | "green" | 
   "safety-clearance": "amber",
   "plant-engineer-approval": "purple",
   "manager-approval": "purple",
+  "assigned-for-repair": "amber",
   "maintenance-completed": "blue",
   "rca-generated": "cyan",
   "knowledge-saved": "green",
@@ -55,8 +59,9 @@ function now() {
   return new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-export default function IncidentsPage() {
+function IncidentsContent() {
   const { session } = useSession();
+  const searchParams = useSearchParams();
   const role = (session?.role ?? "Technician / Shift Operator") as Role;
   const actorName = session?.employeeName ?? "You";
 
@@ -67,6 +72,19 @@ export default function IncidentsPage() {
   const [search, setSearch] = useState("");
   const [raiseOpen, setRaiseOpen] = useState(false);
   const [investigating, setInvestigating] = useState(false);
+
+  useEffect(() => {
+    const tag = searchParams.get("tag");
+    if (!tag) return;
+    const match = list.find((i) => i.equipmentTag === tag && i.stage !== "closed") ?? list.find((i) => i.equipmentTag === tag);
+    if (match) {
+      setFilter("all");
+      setSearch(tag);
+      setSelectedId(match.id);
+      setMobileShowDetail(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const selected = list.find((i) => i.id === selectedId) ?? (selectedId ? null : list[0] ?? null);
 
@@ -235,6 +253,14 @@ export default function IncidentsPage() {
   );
 }
 
+export default function IncidentsPage() {
+  return (
+    <Suspense fallback={null}>
+      <IncidentsContent />
+    </Suspense>
+  );
+}
+
 function IncidentDetail({
   incident,
   role,
@@ -314,10 +340,18 @@ function IncidentDetail({
 
   function managerApprove() {
     onUpdate(
-      { managerApproval: { by: actorName, approved: true, capaApproved, notes }, stage: "maintenance-completed" },
+      { managerApproval: { by: actorName, approved: true, capaApproved, notes }, stage: "assigned-for-repair" },
       { actor: actorName, role, action: `Final approval granted (CAPA ${capaApproved ? "✓" : "–"}, Work Order ${workOrderApproved ? "✓" : "–"}, Shutdown ${shutdownApproved ? "✓" : "–"})` }
     );
-    toast.success("Final approval granted");
+    toast.success("Final approval granted — assigned to Technician for repair");
+  }
+
+  function markRepairComplete() {
+    onUpdate(
+      { repairCompletion: { by: actorName, notes }, stage: "maintenance-completed" },
+      { actor: actorName, role, action: "Marked physical repair complete" }
+    );
+    toast.success("Repair marked complete — sent to Maintenance Engineer for verification");
   }
 
   function markCompleted() {
@@ -418,11 +452,21 @@ function IncidentDetail({
               {incident.equipmentTag ?? "General"} · Raised by {incident.raisedBy} ({incident.raisedByRole}) · {incident.createdAt}
             </p>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Badge tone={severityTone[incident.severity]}>{incident.severity}</Badge>
-            <Badge tone={stageTone[incident.stage]}>{STAGE_LABEL[incident.stage]}</Badge>
-            {incident.escalated && <Badge tone="red">Escalated</Badge>}
-            {incident.isCritical && <Badge tone="purple">Critical path</Badge>}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-wrap justify-end gap-1.5">
+              <Badge tone={severityTone[incident.severity]}>{incident.severity}</Badge>
+              <Badge tone={stageTone[incident.stage]}>{STAGE_LABEL[incident.stage]}</Badge>
+              {incident.escalated && <Badge tone="red">Escalated</Badge>}
+              {incident.isCritical && <Badge tone="purple">Critical path</Badge>}
+            </div>
+            {incident.equipmentTag && (
+              <Link
+                href={`/maintenance?tag=${encodeURIComponent(incident.equipmentTag)}`}
+                className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+              >
+                <Wrench className="h-3.5 w-3.5" /> View Full Equipment Record
+              </Link>
+            )}
           </div>
         </div>
         <p className="mt-3 text-sm text-text-secondary">{incident.description}</p>
@@ -490,6 +534,12 @@ function IncidentDetail({
         <Section title="Maintenance Manager Approval">
           <span className="font-medium text-text-primary">{incident.managerApproval.by}</span> — Final approval granted
           {incident.managerApproval.notes && <> — {incident.managerApproval.notes}</>}
+        </Section>
+      )}
+      {incident.repairCompletion && (
+        <Section title="Repair Completion">
+          <span className="font-medium text-text-primary">{incident.repairCompletion.by}</span> — Physical repair completed
+          {incident.repairCompletion.notes && <> — {incident.repairCompletion.notes}</>}
         </Section>
       )}
       {incident.rca && incident.stage !== "rca-generated" && (
@@ -659,11 +709,27 @@ function IncidentDetail({
         </ActionPanel>
       )}
 
+      {isMyTurn && incident.stage === "assigned-for-repair" && (
+        <ActionPanel title="Assigned to You — Repair Work">
+          <p className="text-xs text-text-secondary">
+            All approvals are granted. Carry out the repair, then mark it complete to route to the Maintenance Engineer for verification and RCA drafting.
+          </p>
+          <Field label="Repair Notes">
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="What was done to resolve the issue..." />
+          </Field>
+          <ActionButton onClick={markRepairComplete} icon={<ClipboardCheck className="h-3.5 w-3.5" />}>
+            Mark Repair Complete
+          </ActionButton>
+        </ActionPanel>
+      )}
+
       {isMyTurn && incident.stage === "maintenance-completed" && (
-        <ActionPanel title="Confirm Maintenance Completed">
-          <p className="text-xs text-text-secondary">Marking this complete will auto-draft an RCA from the investigation and review notes above.</p>
+        <ActionPanel title="Verify Repair & Draft RCA">
+          <p className="text-xs text-text-secondary">
+            The Technician has completed the physical repair. Verifying this will auto-draft an RCA from the investigation and review notes above.
+          </p>
           <ActionButton onClick={markCompleted} icon={<ClipboardCheck className="h-3.5 w-3.5" />}>
-            Mark Maintenance Completed &amp; Draft RCA
+            Verify &amp; Draft RCA
           </ActionButton>
         </ActionPanel>
       )}
