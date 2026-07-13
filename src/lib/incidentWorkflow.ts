@@ -92,36 +92,36 @@ export function draftRca(incident: WorkflowIncident): string {
   return `Root Cause Analysis — ${incident.title}\n\nEquipment: ${incident.equipmentTag ?? "N/A"}\nSeverity: ${incident.severity}\n\nFindings: ${cause}\n\nCorrective action taken: ${corrective}\n\nPrepared from AI investigation + Maintenance Engineer review notes.`;
 }
 
+const DUPLICATE_ARTIFACT_MARKER = "Auto-closed as a duplicate request for the same equipment";
+
 /**
- * Self-heals stale duplicate incidents left over from before duplicate-RCA prevention
- * existed (or any other accidental double-raise): when multiple non-closed incidents
- * share the same equipment tag + title, keep the oldest and mark the rest as
- * auto-closed duplicates. Safe to run on every load — a no-op once data is clean.
+ * Self-heals stale duplicate incidents (from before duplicate-RCA prevention existed, or
+ * any other accidental double-raise): when multiple non-closed incidents share the same
+ * equipment tag + title, keep the oldest and drop the rest entirely — a duplicate request
+ * should never be visible, not even as a closed record. Safe to run on every load — a
+ * no-op once data is clean.
  */
 export function deduplicateIncidents(incidents: WorkflowIncident[]): WorkflowIncident[] {
+  // Earlier versions of this cleanup marked duplicates "closed" instead of removing them,
+  // which left clutter behind — purge any of those legacy artifacts outright.
+  const withoutLegacyArtifacts = incidents.filter(
+    (incident) => !incident.activityLog.some((a) => a.action === DUPLICATE_ARTIFACT_MARKER)
+  );
+
   // New incidents are prepended (newest-first), so scan back-to-front to find the
   // oldest non-closed incident per (tag, title) group — that's the one we keep active.
   const keeperIdByKey = new Map<string, string>();
-  for (let i = incidents.length - 1; i >= 0; i--) {
-    const incident = incidents[i];
+  for (let i = withoutLegacyArtifacts.length - 1; i >= 0; i--) {
+    const incident = withoutLegacyArtifacts[i];
     if (incident.stage === "closed") continue;
     const key = `${incident.equipmentTag ?? ""}|${incident.title}`;
     if (!keeperIdByKey.has(key)) keeperIdByKey.set(key, incident.id);
   }
 
-  return incidents.map((incident) => {
-    if (incident.stage === "closed") return incident;
+  return withoutLegacyArtifacts.filter((incident) => {
+    if (incident.stage === "closed") return true;
     const key = `${incident.equipmentTag ?? ""}|${incident.title}`;
-    if (keeperIdByKey.get(key) === incident.id) return incident;
-    // A non-closed duplicate of the one we're keeping — auto-close it.
-    return {
-      ...incident,
-      stage: "closed" as const,
-      activityLog: [
-        ...incident.activityLog,
-        { time: incident.createdAt, actor: "MANTHAN", role: "System" as const, action: "Auto-closed as a duplicate request for the same equipment" },
-      ],
-    };
+    return keeperIdByKey.get(key) === incident.id;
   });
 }
 

@@ -77,6 +77,11 @@ function ChatContent() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const firedInitial = useRef(false);
+  // Guards against double-clicks: setIncidents/context updates are async, so two clicks
+  // close together can both read the same stale `workflowIncidents` snapshot and both pass
+  // the "does one already exist" check below. This ref updates synchronously, before React
+  // has a chance to re-render, so the second click always sees the first click's claim.
+  const rcaRequestedFor = useRef<Set<string>>(new Set());
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -131,10 +136,11 @@ function ChatContent() {
     const existing = workflowIncidents.find(
       (i) => i.equipmentTag === e.tag && i.title === `AI-Requested RCA — ${e.tag}` && i.stage !== "closed"
     );
-    if (existing) {
+    if (existing || rcaRequestedFor.current.has(e.tag)) {
       toast.info("RCA already in progress", { description: `${e.tag} already has an open AI-requested RCA — view it in Incident Workflow.` });
       return;
     }
+    rcaRequestedFor.current.add(e.tag);
     const id = `wf-${Date.now()}`;
     const title = `AI-Requested RCA — ${e.tag}`;
     const description = `RCA requested from the Equipment Intelligence Workspace for ${e.tag} (${e.name}).`;
