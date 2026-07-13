@@ -64,6 +64,16 @@ export function incidentsForRole(incidents: WorkflowIncident[], role: Role): Wor
   return incidents.filter((i) => actionableRole(i) === role);
 }
 
+/**
+ * Technicians raise and escalate incidents but never sit in an approval queue
+ * (actionableRole() never resolves to them), so "Incidents Awaiting My Action"
+ * would always read empty for that role. Give them situational awareness instead:
+ * every incident still open anywhere in the pipeline.
+ */
+export function openIncidents(incidents: WorkflowIncident[]): WorkflowIncident[] {
+  return incidents.filter((i) => i.stage !== "closed");
+}
+
 export function nextStageAfterReview(incident: WorkflowIncident): IncidentStage {
   return incident.requiresSafetyClearance ? "safety-clearance" : "plant-engineer-approval";
 }
@@ -76,6 +86,39 @@ export function draftRca(incident: WorkflowIncident): string {
   const cause = incident.aiRecommendation ?? "Root cause under investigation.";
   const corrective = incident.maintenanceReview?.correctiveAction ?? "Corrective action pending documentation.";
   return `Root Cause Analysis — ${incident.title}\n\nEquipment: ${incident.equipmentTag ?? "N/A"}\nSeverity: ${incident.severity}\n\nFindings: ${cause}\n\nCorrective action taken: ${corrective}\n\nPrepared from AI investigation + Maintenance Engineer review notes.`;
+}
+
+/**
+ * Self-heals stale duplicate incidents left over from before duplicate-RCA prevention
+ * existed (or any other accidental double-raise): when multiple non-closed incidents
+ * share the same equipment tag + title, keep the oldest and mark the rest as
+ * auto-closed duplicates. Safe to run on every load — a no-op once data is clean.
+ */
+export function deduplicateIncidents(incidents: WorkflowIncident[]): WorkflowIncident[] {
+  // New incidents are prepended (newest-first), so scan back-to-front to find the
+  // oldest non-closed incident per (tag, title) group — that's the one we keep active.
+  const keeperIdByKey = new Map<string, string>();
+  for (let i = incidents.length - 1; i >= 0; i--) {
+    const incident = incidents[i];
+    if (incident.stage === "closed") continue;
+    const key = `${incident.equipmentTag ?? ""}|${incident.title}`;
+    if (!keeperIdByKey.has(key)) keeperIdByKey.set(key, incident.id);
+  }
+
+  return incidents.map((incident) => {
+    if (incident.stage === "closed") return incident;
+    const key = `${incident.equipmentTag ?? ""}|${incident.title}`;
+    if (keeperIdByKey.get(key) === incident.id) return incident;
+    // A non-closed duplicate of the one we're keeping — auto-close it.
+    return {
+      ...incident,
+      stage: "closed" as const,
+      activityLog: [
+        ...incident.activityLog,
+        { time: incident.createdAt, actor: "MANTHAN", role: "System" as const, action: "Auto-closed as a duplicate request for the same equipment" },
+      ],
+    };
+  });
 }
 
 export const ROLE_SHORT: Record<Role, string> = {

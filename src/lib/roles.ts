@@ -13,14 +13,21 @@ export type NavKey =
 
 export type AccessLevel = "full" | "readonly" | "none";
 
-export interface DashboardCardAccess {
-  plantHealth: boolean;
-  activeAlerts: boolean;
-  aiQuickChat: boolean;
-  recentDocuments: boolean;
-  maintenanceCalendar: boolean;
-  safetyCompliance: boolean;
-  shiftHandover: boolean;
+export type DashboardWidget =
+  | "incidents"
+  | "shiftHandover"
+  | "activeAlerts"
+  | "plantHealth"
+  | "safetyCompliance"
+  | "maintenanceCalendar"
+  | "quickChat"
+  | "recentDocuments";
+
+export interface DashboardLayout {
+  /** Wider left column — what this role needs to act on, in priority order */
+  primary: DashboardWidget[];
+  /** Narrower right column — reference/supporting tools, in priority order */
+  secondary: DashboardWidget[];
 }
 
 export interface RoleAccess {
@@ -30,7 +37,7 @@ export interface RoleAccess {
   maintenance: AccessLevel;
   /** Safety & Compliance screen: what this role can see/do there */
   safety: AccessLevel;
-  dashboardCards: DashboardCardAccess;
+  dashboardLayout: DashboardLayout;
 }
 
 /**
@@ -52,70 +59,45 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
-    dashboardCards: {
-      plantHealth: true,
-      activeAlerts: true,
-      aiQuickChat: true,
-      recentDocuments: true,
-      maintenanceCalendar: true,
-      safetyCompliance: false,
-      shiftHandover: true,
+    dashboardLayout: {
+      primary: ["shiftHandover", "activeAlerts", "incidents"],
+      secondary: ["quickChat", "recentDocuments"],
     },
   },
   "Maintenance Engineer": {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
     maintenance: "full",
     safety: "none",
-    dashboardCards: {
-      plantHealth: true,
-      activeAlerts: true,
-      aiQuickChat: true,
-      recentDocuments: true,
-      maintenanceCalendar: true,
-      safetyCompliance: false,
-      shiftHandover: false,
+    dashboardLayout: {
+      primary: ["incidents", "activeAlerts", "plantHealth"],
+      secondary: ["quickChat", "maintenanceCalendar", "recentDocuments"],
     },
   },
   "Plant Engineer": {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
-    dashboardCards: {
-      plantHealth: true,
-      activeAlerts: true,
-      aiQuickChat: true,
-      recentDocuments: true,
-      maintenanceCalendar: true,
-      safetyCompliance: false,
-      shiftHandover: false,
+    dashboardLayout: {
+      primary: ["incidents", "plantHealth", "activeAlerts"],
+      secondary: ["quickChat", "maintenanceCalendar", "recentDocuments"],
     },
   },
   "Safety Officer": {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "safety", "incidents", "analytics", "settings"],
     maintenance: "none",
     safety: "full",
-    dashboardCards: {
-      plantHealth: false,
-      activeAlerts: true,
-      aiQuickChat: true,
-      recentDocuments: true,
-      maintenanceCalendar: false,
-      safetyCompliance: true,
-      shiftHandover: false,
+    dashboardLayout: {
+      primary: ["incidents", "safetyCompliance", "activeAlerts"],
+      secondary: ["quickChat", "recentDocuments"],
     },
   },
   "Maintenance Manager / Reliability Manager": {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "incidents", "analytics", "settings"],
     maintenance: "full",
     safety: "full",
-    dashboardCards: {
-      plantHealth: true,
-      activeAlerts: true,
-      aiQuickChat: true,
-      recentDocuments: true,
-      maintenanceCalendar: true,
-      safetyCompliance: true,
-      shiftHandover: true,
+    dashboardLayout: {
+      primary: ["incidents", "plantHealth", "activeAlerts", "safetyCompliance"],
+      secondary: ["quickChat", "maintenanceCalendar", "shiftHandover", "recentDocuments"],
     },
   },
 };

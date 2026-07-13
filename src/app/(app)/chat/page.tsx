@@ -66,7 +66,7 @@ type Tab = "sources" | "pid" | "equipment" | "history";
 function ChatContent() {
   const searchParams = useSearchParams();
   const { session } = useSession();
-  const { incidents: workflowIncidents, addIncident } = useIncidents();
+  const { incidents: workflowIncidents, addIncident, updateIncident } = useIncidents();
   const [input, setInput] = useState("");
   const handleVoice = useVoiceInput(setInput);
   const [tab, setTab] = useState<Tab>("sources");
@@ -136,10 +136,12 @@ function ChatContent() {
       return;
     }
     const id = `wf-${Date.now()}`;
+    const title = `AI-Requested RCA — ${e.tag}`;
+    const description = `RCA requested from the Equipment Intelligence Workspace for ${e.tag} (${e.name}).`;
     const created: WorkflowIncident = {
       id,
-      title: `AI-Requested RCA — ${e.tag}`,
-      description: `RCA requested from the Equipment Intelligence Workspace for ${e.tag} (${e.name}).`,
+      title,
+      description,
       equipmentTag: e.tag,
       severity: e.health === "critical" ? "critical" : e.health === "warning" ? "high" : "medium",
       isCritical: e.health === "critical",
@@ -154,7 +156,30 @@ function ChatContent() {
       activityLog: [{ time: new Date().toLocaleString("en-IN"), actor: session?.employeeName ?? "You", role: session?.role ?? "Technician / Shift Operator", action: "Requested RCA from Equipment Intelligence Workspace" }],
     };
     addIncident(created);
-    toast.success("RCA requested", { description: `Tracking as an incident for ${e.tag} — view it in Incident Workflow.` });
+
+    const investigatePromise = fetch("/api/investigate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, equipmentTag: e.tag }),
+    })
+      .then((r) => r.json())
+      .then((data: { recommendation: string; aiUnavailable?: boolean }) => {
+        updateIncident(
+          id,
+          { aiRecommendation: data.recommendation, stage: "maintenance-review" },
+          { actor: "MANTHAN AI", role: "System", action: "AI investigation complete — recommendation attached" }
+        );
+        return data;
+      })
+      .catch(() => {
+        throw new Error("investigation failed");
+      });
+
+    toast.promise(investigatePromise, {
+      loading: `AI investigating ${e.tag}...`,
+      success: `RCA requested — AI investigation complete, routed to Maintenance Engineer`,
+      error: "AI investigation unavailable — routed to Maintenance Engineer for manual review",
+    });
   }
 
   function createWorkOrder(e: EquipmentItem) {

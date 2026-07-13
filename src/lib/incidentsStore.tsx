@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { workflowIncidents as seedIncidents } from "./mock-data";
+import { deduplicateIncidents } from "./incidentWorkflow";
 import type { IncidentActivity, WorkflowIncident } from "./types";
 
 const STORAGE_KEY = "manthan-incidents-v1";
@@ -33,7 +34,7 @@ export function IncidentsProvider({ children }: { children: React.ReactNode }) {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
-        setIncidents(JSON.parse(raw));
+        setIncidents(deduplicateIncidents(JSON.parse(raw)));
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
