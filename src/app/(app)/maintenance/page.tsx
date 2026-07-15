@@ -188,7 +188,7 @@ function MaintenanceContent() {
             </div>
           </div>
           <div className="flex gap-2">
-            {session?.role === "Technician / Shift Operator" && (
+            {session?.role === "Maintenance Engineer" && (
               <Link
                 href={`/incidents?raise=${encodeURIComponent(selected.tag)}`}
                 className="flex items-center gap-1.5 rounded-md border border-accent-red/40 px-3 py-2 text-xs font-medium text-accent-red transition-colors hover:bg-accent-red/10"
