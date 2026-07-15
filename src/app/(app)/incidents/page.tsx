@@ -457,6 +457,7 @@ function IncidentDetail({
             <h2 className="font-display text-xl font-semibold text-text-primary">{incident.title}</h2>
             <p className="mt-1 text-sm text-text-secondary">
               {incident.equipmentTag ?? "General"} · Raised by {incident.raisedBy} ({incident.raisedByRole}) · {incident.createdAt}
+              {incident.assignedTechnician && <> · Assigned to {incident.assignedTechnician}</>}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -520,6 +521,12 @@ function IncidentDetail({
           <span className="font-medium text-text-primary">{incident.maintenanceReview.by}:</span> {incident.maintenanceReview.notes}
           <br />
           <span className="font-medium text-text-primary">Corrective action:</span> {incident.maintenanceReview.correctiveAction}
+          {incident.assignedTechnician && (
+            <>
+              <br />
+              <span className="font-medium text-text-primary">Assigned Technician:</span> {incident.assignedTechnician}
+            </>
+          )}
         </Section>
       )}
       {incident.safetyClearance && (
