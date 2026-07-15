@@ -29,7 +29,7 @@ import { Modal } from "@/components/ui/Modal";
 import { DocumentViewerModal, type EvidenceItem } from "@/components/chat/DocumentViewerModal";
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
-import { equipment } from "@/lib/mock-data";
+import { equipment, TECHNICIANS } from "@/lib/mock-data";
 import {
   STAGE_ORDER,
   STAGE_LABEL,
@@ -630,7 +630,14 @@ function IncidentDetail({
       {isMyTurn && incident.stage === "maintenance-review" && (
         <ActionPanel title="Maintenance Engineer Review">
           <Field label="Assign Technician">
-            <input value={assignedTechnician} onChange={(e) => setAssignedTechnician(e.target.value)} placeholder="Technician name" className={inputCls} />
+            <select value={assignedTechnician} onChange={(e) => setAssignedTechnician(e.target.value)} className={inputCls}>
+              <option value="">Select a technician...</option>
+              {TECHNICIANS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label="Review Notes">
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Validation notes on the AI recommendation..." />

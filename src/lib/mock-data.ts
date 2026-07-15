@@ -26,6 +26,9 @@ export const UNIT = "6"; // Stage-III's single 800 MW unit, following on from St
 export const SHIFT = "B";
 export const BIDDING_DOC_NO = "CS-8003-001-2";
 
+/** Technician / Shift Operator roster available for assignment during Maintenance Engineer Review. */
+export const TECHNICIANS = ["R. Kumar", "P. Verma", "V. Nair"];
+
 export const alerts: Alert[] = [
   {
     id: "al-1",
