@@ -85,6 +85,9 @@ function ChatContent() {
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
+    onError: () => {
+      toast.error("MANTHAN AI is temporarily unavailable", { description: "Please try again in a moment." });
+    },
   });
 
   useEffect(() => {
