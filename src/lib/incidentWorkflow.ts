@@ -82,6 +82,25 @@ export function nextStageAfterReview(incident: WorkflowIncident): IncidentStage 
   return incident.requiresSafetyClearance ? "safety-clearance" : "plant-engineer-approval";
 }
 
+const REPAIR_COMPLETE_INDEX = STAGE_ORDER.indexOf("maintenance-completed");
+
+/**
+ * A technician is tied up on a repair from the moment they're assigned during Maintenance
+ * Engineer Review until the repair is actually completed (stage reaches "maintenance-completed") —
+ * they're going through approvals and then doing the physical work in between, not available for
+ * a second assignment. Returns a map of technician name -> the incident holding them up.
+ */
+export function busyTechnicians(incidents: WorkflowIncident[], excludeIncidentId?: string): Map<string, WorkflowIncident> {
+  const busy = new Map<string, WorkflowIncident>();
+  for (const incident of incidents) {
+    if (incident.id === excludeIncidentId) continue;
+    if (!incident.assignedTechnician) continue;
+    if (STAGE_ORDER.indexOf(incident.stage) >= REPAIR_COMPLETE_INDEX) continue;
+    busy.set(incident.assignedTechnician, incident);
+  }
+  return busy;
+}
+
 export function nextStageAfterApproval(incident: WorkflowIncident): IncidentStage {
   return incident.isCritical ? "manager-approval" : "assigned-for-repair";
 }

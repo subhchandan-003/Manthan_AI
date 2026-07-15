@@ -38,6 +38,7 @@ import {
   nextStageAfterReview,
   nextStageAfterApproval,
   draftRca,
+  busyTechnicians,
 } from "@/lib/incidentWorkflow";
 import type { IncidentActivity, IncidentAttachment, IncidentStage, Role, WorkflowIncident } from "@/lib/types";
 
@@ -241,6 +242,7 @@ function IncidentsContent() {
           <IncidentDetail
             key={selected.id}
             incident={selected}
+            allIncidents={list}
             role={role}
             actorName={actorName}
             investigating={investigating && selected.stage === "ai-investigation"}
@@ -268,6 +270,7 @@ export default function IncidentsPage() {
 
 function IncidentDetail({
   incident,
+  allIncidents,
   role,
   actorName,
   investigating,
@@ -275,6 +278,7 @@ function IncidentDetail({
   onDelete,
 }: {
   incident: WorkflowIncident;
+  allIncidents: WorkflowIncident[];
   role: Role;
   actorName: string;
   investigating: boolean;
@@ -285,6 +289,7 @@ function IncidentDetail({
   const currentIndex = STAGE_ORDER.indexOf(incident.stage);
   const isMyTurn = actionableRole(incident) === role;
   const canActAsRaiser = role === "Technician / Shift Operator" && incident.stage !== "closed";
+  const busy = useMemo(() => busyTechnicians(allIncidents, incident.id), [allIncidents, incident.id]);
 
   const [notes, setNotes] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState("");
@@ -306,6 +311,9 @@ function IncidentDetail({
 
   function completeReview() {
     if (!correctiveAction.trim()) return toast.error("Add a recommended corrective action first.");
+    if (assignedTechnician && busy.has(assignedTechnician)) {
+      return toast.error("That technician is already on a repair", { description: "Choose someone else, or wait until they mark their current repair complete." });
+    }
     const patched = { ...incident, requiresSafetyClearance: needsSafety, isCritical };
     onUpdate(
       {
@@ -639,12 +647,20 @@ function IncidentDetail({
           <Field label="Assign Technician">
             <select value={assignedTechnician} onChange={(e) => setAssignedTechnician(e.target.value)} className={inputCls}>
               <option value="">Select a technician...</option>
-              {TECHNICIANS.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
+              {TECHNICIANS.map((name) => {
+                const busyOn = busy.get(name);
+                return (
+                  <option key={name} value={name} disabled={!!busyOn}>
+                    {busyOn ? `${name} — busy (${busyOn.equipmentTag ?? busyOn.title})` : name}
+                  </option>
+                );
+              })}
             </select>
+            {busy.size > 0 && (
+              <p className="mt-1.5 text-[11px] text-text-muted">
+                Technicians already on a repair won&apos;t be free until they mark that repair complete.
+              </p>
+            )}
           </Field>
           <Field label="Review Notes">
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="Validation notes on the AI recommendation..." />
