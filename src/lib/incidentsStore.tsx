@@ -16,6 +16,7 @@ interface IncidentsContextValue {
     patch: Partial<WorkflowIncident>,
     activity: Omit<IncidentActivity, "time">
   ) => void;
+  removeIncident: (id: string) => void;
   resetIncidents: () => void;
 }
 
@@ -63,13 +64,17 @@ export function IncidentsProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const removeIncident = useCallback((id: string) => {
+    setIncidents((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
   const resetIncidents = useCallback(() => {
     window.localStorage.removeItem(STORAGE_KEY);
     setIncidents(seedIncidents);
   }, []);
 
   return (
-    <IncidentsContext.Provider value={{ incidents, ready, addIncident, updateIncident, resetIncidents }}>
+    <IncidentsContext.Provider value={{ incidents, ready, addIncident, updateIncident, removeIncident, resetIncidents }}>
       {children}
     </IncidentsContext.Provider>
   );

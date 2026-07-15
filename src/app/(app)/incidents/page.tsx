@@ -22,6 +22,7 @@ import {
   FileText,
   ClipboardCheck,
   Wrench,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -65,7 +66,7 @@ function IncidentsContent() {
   const role = (session?.role ?? "Technician / Shift Operator") as Role;
   const actorName = session?.employeeName ?? "You";
 
-  const { incidents: list, addIncident, updateIncident } = useIncidents();
+  const { incidents: list, addIncident, updateIncident, removeIncident } = useIncidents();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [filter, setFilter] = useState<"queue" | "all" | "mine">("queue");
@@ -244,6 +245,10 @@ function IncidentsContent() {
             actorName={actorName}
             investigating={investigating && selected.stage === "ai-investigation"}
             onUpdate={(patch, activity) => updateIncident(selected.id, patch, activity)}
+            onDelete={() => {
+              removeIncident(selected.id);
+              setSelectedId(null);
+            }}
           />
         )}
       </div>
@@ -267,12 +272,14 @@ function IncidentDetail({
   actorName,
   investigating,
   onUpdate,
+  onDelete,
 }: {
   incident: WorkflowIncident;
   role: Role;
   actorName: string;
   investigating: boolean;
   onUpdate: (patch: Partial<WorkflowIncident>, activity: Omit<IncidentActivity, "time">) => void;
+  onDelete: () => void;
 }) {
   const stages = visibleStages(incident);
   const currentIndex = STAGE_ORDER.indexOf(incident.stage);
@@ -768,6 +775,27 @@ function IncidentDetail({
           ))}
         </div>
       </div>
+
+      {role === "Maintenance Manager / Reliability Manager" && (
+        <div className="rounded-lg border border-accent-red/30 bg-accent-red/5 p-4">
+          <h3 className="text-xs font-semibold text-text-primary">Danger Zone</h3>
+          <p className="mt-1 text-[11px] text-text-secondary">
+            Permanently removes this incident record. Use for test/erroneous entries only — this cannot be undone.
+          </p>
+          <div className="mt-3">
+            <ActionButton
+              onClick={() => {
+                onDelete();
+                toast.success("Incident deleted", { description: incident.title });
+              }}
+              tone="danger"
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+            >
+              Delete Incident
+            </ActionButton>
+          </div>
+        </div>
+      )}
 
       <DocumentViewerModal item={viewerAttachment ? viewAttachment(viewerAttachment) : null} onClose={() => setViewerAttachment(null)} />
     </div>
