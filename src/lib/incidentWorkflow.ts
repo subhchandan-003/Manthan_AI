@@ -52,7 +52,9 @@ export function actionableRole(incident: WorkflowIncident): Role | null {
     case "manager-approval":
       return "Maintenance Manager / Reliability Manager";
     case "assigned-for-repair":
-      return "Technician / Shift Operator";
+      // Technicians carry out the physical repair, but don't self-certify it's done —
+      // the Maintenance Engineer confirms completion after reviewing the work in the field.
+      return "Maintenance Engineer";
     case "maintenance-completed":
       return "Maintenance Engineer";
     case "rca-generated":

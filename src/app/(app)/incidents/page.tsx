@@ -364,17 +364,17 @@ function IncidentDetail({
   function markRepairComplete() {
     onUpdate(
       { repairCompletion: { by: actorName, notes }, stage: "maintenance-completed" },
-      { actor: actorName, role, action: "Marked physical repair complete" }
+      { actor: actorName, role, action: "Confirmed field repair complete after review" }
     );
-    toast.success("Repair marked complete — sent to Maintenance Engineer for verification");
+    toast.success("Repair confirmed complete — ready for RCA drafting");
   }
 
   function markCompleted() {
     onUpdate(
       { rca: draftRca(incident), stage: "rca-generated" },
-      { actor: actorName, role, action: "Marked maintenance completed — RCA drafted" }
+      { actor: actorName, role, action: "Drafted RCA from investigation, review and field completion notes" }
     );
-    toast.success("Maintenance marked complete — RCA drafted");
+    toast.success("RCA drafted");
   }
 
   function publishRca() {
@@ -560,7 +560,7 @@ function IncidentDetail({
       )}
       {incident.repairCompletion && (
         <Section title="Repair Completion">
-          <span className="font-medium text-text-primary">{incident.repairCompletion.by}</span> — Physical repair completed
+          <span className="font-medium text-text-primary">{incident.repairCompletion.by}</span> — Confirmed field repair complete
           {incident.repairCompletion.notes && <> — {incident.repairCompletion.notes}</>}
         </Section>
       )}
@@ -747,26 +747,26 @@ function IncidentDetail({
       )}
 
       {isMyTurn && incident.stage === "assigned-for-repair" && (
-        <ActionPanel title="Assigned to You — Repair Work">
+        <ActionPanel title="Confirm Field Repair Complete">
           <p className="text-xs text-text-secondary">
-            All approvals are granted. Carry out the repair, then mark it complete to route to the Maintenance Engineer for verification and RCA drafting.
+            {incident.assignedTechnician ?? "The assigned technician"} is carrying out this repair in the field. Once you&apos;ve reviewed the completed work yourself, confirm it here to route for RCA drafting.
           </p>
-          <Field label="Repair Notes">
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="What was done to resolve the issue..." />
+          <Field label="Field Review Notes">
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputCls} placeholder="What you observed reviewing the completed repair..." />
           </Field>
           <ActionButton onClick={markRepairComplete} icon={<ClipboardCheck className="h-3.5 w-3.5" />}>
-            Mark Repair Complete
+            Confirm Repair Complete
           </ActionButton>
         </ActionPanel>
       )}
 
       {isMyTurn && incident.stage === "maintenance-completed" && (
-        <ActionPanel title="Verify Repair & Draft RCA">
+        <ActionPanel title="Draft RCA">
           <p className="text-xs text-text-secondary">
-            The Technician has completed the physical repair. Verifying this will auto-draft an RCA from the investigation and review notes above.
+            Field repair confirmed. Drafting will consolidate the investigation, review and field completion notes into a formal RCA.
           </p>
           <ActionButton onClick={markCompleted} icon={<ClipboardCheck className="h-3.5 w-3.5" />}>
-            Verify &amp; Draft RCA
+            Draft RCA
           </ActionButton>
         </ActionPanel>
       )}
