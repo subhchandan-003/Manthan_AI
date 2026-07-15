@@ -188,6 +188,14 @@ function MaintenanceContent() {
             </div>
           </div>
           <div className="flex gap-2">
+            {session?.role === "Technician / Shift Operator" && (
+              <Link
+                href={`/incidents?raise=${encodeURIComponent(selected.tag)}`}
+                className="flex items-center gap-1.5 rounded-md border border-accent-red/40 px-3 py-2 text-xs font-medium text-accent-red transition-colors hover:bg-accent-red/10"
+              >
+                <AlertTriangle className="h-3.5 w-3.5" /> Raise Incident
+              </Link>
+            )}
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about ${selected.tag} — ${selected.name}`)}`}
               className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
