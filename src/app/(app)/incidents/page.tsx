@@ -72,16 +72,9 @@ function IncidentsContent() {
   const [filter, setFilter] = useState<"queue" | "all" | "mine">("queue");
   const [search, setSearch] = useState("");
   const [raiseOpen, setRaiseOpen] = useState(false);
-  const [raiseInitialTag, setRaiseInitialTag] = useState("");
   const [investigating, setInvestigating] = useState(false);
 
   useEffect(() => {
-    const raiseTag = searchParams.get("raise");
-    if (raiseTag) {
-      setRaiseInitialTag(raiseTag);
-      setRaiseOpen(true);
-      return;
-    }
     const tag = searchParams.get("tag");
     if (!tag) return;
     const match = list.find((i) => i.equipmentTag === tag && i.stage !== "closed") ?? list.find((i) => i.equipmentTag === tag);
@@ -260,15 +253,7 @@ function IncidentsContent() {
         )}
       </div>
 
-      <RaiseIncidentModal
-        open={raiseOpen}
-        initialEquipmentTag={raiseInitialTag}
-        onClose={() => {
-          setRaiseOpen(false);
-          setRaiseInitialTag("");
-        }}
-        onSubmit={raiseIncident}
-      />
+      <RaiseIncidentModal open={raiseOpen} onClose={() => setRaiseOpen(false)} onSubmit={raiseIncident} />
     </div>
   );
 }
@@ -885,12 +870,10 @@ function ActionButton({
 
 function RaiseIncidentModal({
   open,
-  initialEquipmentTag,
   onClose,
   onSubmit,
 }: {
   open: boolean;
-  initialEquipmentTag?: string;
   onClose: () => void;
   onSubmit: (form: { title: string; equipmentTag: string; description: string; severity: WorkflowIncident["severity"]; requiresSafetyClearance: boolean }) => void;
 }) {
@@ -899,10 +882,6 @@ function RaiseIncidentModal({
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState<WorkflowIncident["severity"]>("medium");
   const [requiresSafetyClearance, setRequiresSafetyClearance] = useState(false);
-
-  useEffect(() => {
-    if (open && initialEquipmentTag) setEquipmentTag(initialEquipmentTag);
-  }, [open, initialEquipmentTag]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

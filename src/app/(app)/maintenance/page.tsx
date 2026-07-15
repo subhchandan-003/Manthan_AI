@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft, Siren } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
@@ -13,7 +13,7 @@ import { getRoleAccess } from "@/lib/roles";
 import { useIncidents } from "@/lib/incidentsStore";
 import { STAGE_LABEL } from "@/lib/incidentWorkflow";
 import { equipment, maintenanceEvents, spareParts } from "@/lib/mock-data";
-import type { EquipmentItem } from "@/lib/types";
+import type { EquipmentItem, Role, WorkflowIncident } from "@/lib/types";
 
 type Tab = "overview" | "history" | "recommendations" | "sops" | "spares" | "troubleshooting";
 
@@ -61,8 +61,13 @@ const READONLY_HIDDEN_TABS: Tab[] = ["spares", "troubleshooting"];
 function MaintenanceContent() {
   const { session } = useSession();
   const searchParams = useSearchParams();
-  const { incidents } = useIncidents();
+  const router = useRouter();
+  const { incidents, addIncident, updateIncident } = useIncidents();
   const isReadOnly = getRoleAccess(session?.role).maintenance === "readonly";
+  // Guards against double-clicks the same way chat's "Ask AI to Investigate" does — this
+  // updates synchronously so a second click always sees the first click's claim, even before
+  // the incidents context has re-rendered with the newly added record.
+  const flagRequestedFor = useRef<Set<string>>(new Set());
   const visibleTabs = isReadOnly ? TABS.filter((t) => !READONLY_HIDDEN_TABS.includes(t.key)) : TABS;
 
   const [search, setSearch] = useState("");
@@ -124,6 +129,71 @@ function MaintenanceContent() {
   function requestSparePart(partNumber: string) {
     setRequestedParts((prev) => new Set(prev).add(partNumber));
     toast.success("Spare part requested", { description: partNumber });
+  }
+
+  function raiseIncidentInstantly(e: EquipmentItem) {
+    const title = `Equipment Review Flag — ${e.tag}`;
+    const existing = incidents.find((i) => i.equipmentTag === e.tag && i.title === title && i.stage !== "closed");
+    if (existing || flagRequestedFor.current.has(e.tag)) {
+      toast.info("Incident already raised for this equipment", { description: `${e.tag} already has an open incident — view it in Incident Workflow.` });
+      router.push(`/incidents?tag=${encodeURIComponent(e.tag)}`);
+      return;
+    }
+    flagRequestedFor.current.add(e.tag);
+
+    const conditionParts: string[] = [];
+    if (e.bearingTemp !== undefined) conditionParts.push(`bearing temperature ${e.bearingTemp}°C`);
+    if (e.vibration !== undefined) conditionParts.push(`vibration ${e.vibration} mm/s`);
+    if (e.lastTrip) conditionParts.push(`last event: ${e.lastTrip}`);
+    const description = `Flagged by ${session?.employeeName ?? "Maintenance Engineer"} during Maintenance & Operations review — health status: ${e.health}. Current condition: ${
+      conditionParts.length > 0 ? conditionParts.join(", ") : "no abnormal sensor readings on record"
+    }. Running hours: ${e.runningHours.toLocaleString("en-IN")}.`;
+
+    const id = `wf-${Date.now()}`;
+    const nowStr = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    const created: WorkflowIncident = {
+      id,
+      title,
+      description,
+      equipmentTag: e.tag,
+      severity: e.health === "critical" ? "critical" : e.health === "warning" ? "high" : "medium",
+      isCritical: e.health === "critical",
+      requiresSafetyClearance: false,
+      escalated: false,
+      shutdownRequested: false,
+      stage: "ai-investigation",
+      raisedBy: session?.employeeName ?? "Maintenance Engineer",
+      raisedByRole: (session?.role ?? "Maintenance Engineer") as Role,
+      createdAt: nowStr,
+      attachments: [],
+      activityLog: [{ time: nowStr, actor: session?.employeeName ?? "Maintenance Engineer", role: (session?.role ?? "Maintenance Engineer") as Role, action: "Flagged equipment for incident review from Maintenance & Operations" }],
+    };
+    addIncident(created);
+    router.push(`/incidents?tag=${encodeURIComponent(e.tag)}`);
+
+    const investigatePromise = fetch("/api/investigate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, equipmentTag: e.tag }),
+    })
+      .then((r) => r.json())
+      .then((data: { recommendation: string; aiUnavailable?: boolean }) => {
+        updateIncident(
+          id,
+          { aiRecommendation: data.recommendation, stage: "maintenance-review" },
+          { actor: "MANTHAN AI", role: "System", action: "AI investigation complete — recommendation attached" }
+        );
+        return data;
+      })
+      .catch(() => {
+        throw new Error("investigation failed");
+      });
+
+    toast.promise(investigatePromise, {
+      loading: `Incident raised for ${e.tag} — AI investigating...`,
+      success: "AI investigation complete — routed to Maintenance Engineer",
+      error: "AI investigation unavailable — routed to Maintenance Engineer for manual review",
+    });
   }
 
   return (
@@ -189,12 +259,12 @@ function MaintenanceContent() {
           </div>
           <div className="flex gap-2">
             {session?.role === "Maintenance Engineer" && (
-              <Link
-                href={`/incidents?raise=${encodeURIComponent(selected.tag)}`}
+              <button
+                onClick={() => raiseIncidentInstantly(selected)}
                 className="flex items-center gap-1.5 rounded-md border border-accent-red/40 px-3 py-2 text-xs font-medium text-accent-red transition-colors hover:bg-accent-red/10"
               >
                 <AlertTriangle className="h-3.5 w-3.5" /> Raise Incident
-              </Link>
+              </button>
             )}
             <Link
               href={`/chat?q=${encodeURIComponent(`Tell me about ${selected.tag} — ${selected.name}`)}`}
