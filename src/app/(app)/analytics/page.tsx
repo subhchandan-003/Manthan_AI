@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -14,6 +15,8 @@ import {
 } from "recharts";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { documents, equipment } from "@/lib/mock-data";
+import { useIncidents } from "@/lib/incidentsStore";
+import { computeMttr, computeMtbfByEquipment } from "@/lib/incidentWorkflow";
 
 const COLORS = {
   blue: "#2F80D6",
@@ -85,11 +88,52 @@ const tooltipStyle = {
 };
 
 export default function AnalyticsPage() {
+  const { incidents } = useIncidents();
+  const mttr = useMemo(() => computeMttr(incidents), [incidents]);
+  const mtbf = useMemo(() => computeMtbfByEquipment(incidents), [incidents]);
+
   return (
     <div className="mx-auto max-w-[1440px] p-6 md:p-8">
       <h1 className="font-display text-xl font-semibold text-text-primary md:text-2xl">Analytics &amp; Insights</h1>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader title="Reliability KPIs — MTTR &amp; MTBF" />
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="font-display text-2xl font-bold text-accent-cyan">
+                {mttr.avgHours !== null ? `${mttr.avgHours.toFixed(1)}h` : "—"}
+              </p>
+              <p className="mt-1 text-[11px] text-text-secondary">
+                Avg. MTTR{mttr.sampleSize > 0 ? ` (${mttr.sampleSize} repair${mttr.sampleSize === 1 ? "" : "s"})` : ""}
+              </p>
+            </div>
+            <div>
+              <p className="font-display text-2xl font-bold text-accent-cyan">
+                {mtbf.length > 0 ? `${mtbf[0].avgDays.toFixed(1)}d` : "—"}
+              </p>
+              <p className="mt-1 text-[11px] text-text-secondary">
+                Shortest MTBF{mtbf.length > 0 ? ` (${mtbf[0].tag})` : ""}
+              </p>
+            </div>
+          </div>
+          {mtbf.length > 0 ? (
+            <ResponsiveContainer width="100%" height={180} className="mt-3">
+              <BarChart data={mtbf.map((m) => ({ name: m.tag, days: Number(m.avgDays.toFixed(1)) }))} layout="vertical" margin={{ left: 10 }}>
+                <CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" />
+                <XAxis type="number" stroke="var(--text-muted)" fontSize={11} label={{ value: "Avg. days between incidents", position: "insideBottom", offset: -5, fontSize: 10, fill: "var(--text-muted)" }} />
+                <YAxis type="category" dataKey="name" stroke="var(--text-muted)" fontSize={10.5} width={90} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="days" fill={COLORS.amber} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="mt-3 text-xs text-text-muted">
+              MTBF needs at least 2 incidents on the same equipment to compute a gap — not enough repeat incidents yet.
+            </p>
+          )}
+        </Card>
+
         <Card>
           <CardHeader title="Equipment Reliability Trend (OEE %)" />
           <ResponsiveContainer width="100%" height={220}>

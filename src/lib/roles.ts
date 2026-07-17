@@ -8,6 +8,7 @@ export type NavKey =
   | "maintenance"
   | "safety"
   | "incidents"
+  | "knowledge"
   | "analytics"
   | "settings";
 
@@ -56,7 +57,7 @@ export interface RoleAccess {
  */
 export const ROLE_ACCESS: Record<Role, RoleAccess> = {
   "Technician / Shift Operator": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
     dashboardLayout: {
@@ -65,7 +66,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Maintenance Engineer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "full",
     safety: "none",
     dashboardLayout: {
@@ -74,7 +75,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Plant Engineer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
     dashboardLayout: {
@@ -83,7 +84,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Safety Officer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "safety", "incidents", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "safety", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "none",
     safety: "full",
     dashboardLayout: {
@@ -92,7 +93,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Maintenance Manager / Reliability Manager": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "incidents", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "full",
     safety: "full",
     dashboardLayout: {
@@ -114,6 +115,7 @@ const KNOWN_NAV_KEYS: NavKey[] = [
   "maintenance",
   "safety",
   "incidents",
+  "knowledge",
   "analytics",
   "settings",
 ];

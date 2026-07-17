@@ -163,6 +163,10 @@ export interface WorkflowIncident {
   raisedBy: string;
   raisedByRole: Role;
   createdAt: string;
+  /** Epoch ms at creation — createdAt is a locale display string, not reliably parseable; this is the real clock for MTTR/MTBF math. */
+  createdAtTs?: number;
+  /** Epoch ms of the first time each stage was entered — populated automatically by updateIncident(). Used to compute repair duration (MTTR) without parsing display strings. */
+  stageEnteredAt?: Partial<Record<IncidentStage, number>>;
   assignedTechnician?: string;
   aiRecommendation?: string;
   maintenanceReview?: { by: string; notes: string; correctiveAction: string };
@@ -175,4 +179,26 @@ export interface WorkflowIncident {
   capa?: string;
   attachments: IncidentAttachment[];
   activityLog: IncidentActivity[];
+}
+
+/**
+ * A persisted work order raised from Maintenance & Operations — distinct from the incident
+ * workflow (which handles the approval chain for a specific failure); this is the general
+ * "schedule this piece of work" record a CMMS is built around.
+ */
+export interface WorkOrder {
+  id: string;
+  woNumber: string;
+  equipmentTag: string;
+  equipmentName: string;
+  description: string;
+  priority: "Low" | "Medium" | "High" | "Critical";
+  status: "open" | "in-progress" | "completed";
+  createdBy: string;
+  createdByRole: Role;
+  createdAt: string;
+  createdAtTs: number;
+  assignedTechnician?: string;
+  completedAt?: string;
+  completedAtTs?: number;
 }

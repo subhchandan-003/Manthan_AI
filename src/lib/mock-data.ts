@@ -388,6 +388,11 @@ export const incidents: Incident[] = [
   },
 ];
 
+/** Converts the seed data's "YYYY-MM-DD HH:mm" display strings into a real epoch timestamp for MTTR/MTBF math. */
+function ts(dateTime: string): number {
+  return new Date(`${dateTime.replace(" ", "T")}:00`).getTime();
+}
+
 /**
  * Live incident-response pipeline seed data (see src/lib/incidentWorkflow.ts for the
  * stage machine). Distinct from `incidents` above, which is the closed-out historical
@@ -408,6 +413,8 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "R. Kumar",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2026-07-10 06:20",
+    createdAtTs: ts("2026-07-10 06:20"),
+    stageEnteredAt: { "ai-investigation": ts("2026-07-10 06:20"), "maintenance-review": ts("2026-07-10 06:21") },
     assignedTechnician: "R. Kumar",
     aiRecommendation: "Vibration + bearing-temperature signature matches the IJMET 2010 Cooling System Fan case study (impeller/bearing damage, sheared locking hardware). Recommend SPM bearing check against the 20/35 dBN observe/replace thresholds before next start, per NTPC O&M Best Practices guidance.",
     attachments: [
@@ -434,6 +441,12 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "P. Verma",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2026-07-09 14:05",
+    createdAtTs: ts("2026-07-09 14:05"),
+    stageEnteredAt: {
+      "ai-investigation": ts("2026-07-09 14:05"),
+      "maintenance-review": ts("2026-07-09 14:06"),
+      "safety-clearance": ts("2026-07-09 15:30"),
+    },
     assignedTechnician: "S. Iyer",
     aiRecommendation: "Signature consistent with the IJMET 2010 Purge Fan No. 12 case study (shaft wear at stuffing box). Recommend shaft inspection and rotor balance check.",
     maintenanceReview: {
@@ -462,6 +475,13 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "R. Kumar",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2026-07-06 11:40",
+    createdAtTs: ts("2026-07-06 11:40"),
+    stageEnteredAt: {
+      "ai-investigation": ts("2026-07-06 11:40"),
+      "maintenance-review": ts("2026-07-06 11:41"),
+      "safety-clearance": ts("2026-07-06 13:10"),
+      "plant-engineer-approval": ts("2026-07-06 16:45"),
+    },
     assignedTechnician: "M. Reddy",
     aiRecommendation: "Erosion-driven tube thinning is a known risk on this bank per the Sipat Stage-III P&ID (Drg. XXXX-999-POM-A-004). Recommend ultrasonic thickness survey on adjacent tube banks before returning to service.",
     maintenanceReview: {
@@ -501,6 +521,13 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "P. Verma",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2026-07-07 09:00",
+    createdAtTs: ts("2026-07-07 09:00"),
+    stageEnteredAt: {
+      "ai-investigation": ts("2026-07-07 09:00"),
+      "maintenance-review": ts("2026-07-07 09:01"),
+      "plant-engineer-approval": ts("2026-07-07 10:30"),
+      "manager-approval": ts("2026-07-07 15:00"),
+    },
     assignedTechnician: "M. Reddy",
     aiRecommendation: "Per NTPC O&M Best Practices, excess O2 is reducible to 2.5–2.8% dry-basis with CO monitoring. Recommend mill/air-register tuning pass and CO analyzer cross-check.",
     maintenanceReview: {
@@ -536,6 +563,15 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "R. Kumar",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2025-11-09 08:15",
+    createdAtTs: ts("2025-11-09 08:15"),
+    stageEnteredAt: {
+      "ai-investigation": ts("2025-11-09 08:15"),
+      "maintenance-review": ts("2025-11-09 08:16"),
+      "plant-engineer-approval": ts("2025-11-09 10:00"),
+      // This record predates the "Assigned for Repair" stage split — it went straight from
+      // approval to completion in one step, so that's the timestamp used for MTTR's end marker.
+      "rca-generated": ts("2025-11-10 09:00"),
+    },
     assignedTechnician: "S. Iyer",
     aiRecommendation: "Vibration signature (DE bearing 11/9, NDE 10/7, base 6/8 µm/mm·s⁻¹) matches prior impeller/bearing/locking-hardware failure. Recommend teardown inspection.",
     maintenanceReview: {
@@ -567,6 +603,16 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "P. Verma",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2026-06-28 12:00",
+    createdAtTs: ts("2026-06-28 12:00"),
+    stageEnteredAt: {
+      "ai-investigation": ts("2026-06-28 12:00"),
+      "maintenance-review": ts("2026-06-28 12:01"),
+      "plant-engineer-approval": ts("2026-06-28 13:00"),
+      // Also predates the "Assigned for Repair" stage split.
+      "rca-generated": ts("2026-06-28 15:00"),
+      "knowledge-saved": ts("2026-06-29 09:00"),
+      closed: ts("2026-06-29 09:05"),
+    },
     assignedTechnician: "M. Reddy",
     aiRecommendation: "pH excursion correlates with a limestone slurry feed-pump hiccup. Recommend checking slurry feed pump control loop tuning.",
     maintenanceReview: {
@@ -602,6 +648,14 @@ export const workflowIncidents: WorkflowIncident[] = [
     raisedBy: "P. Verma",
     raisedByRole: "Technician / Shift Operator",
     createdAt: "2026-07-11 07:30",
+    createdAtTs: ts("2026-07-11 07:30"),
+    stageEnteredAt: {
+      "ai-investigation": ts("2026-07-11 07:30"),
+      "maintenance-review": ts("2026-07-11 07:31"),
+      "plant-engineer-approval": ts("2026-07-11 08:15"),
+      "manager-approval": ts("2026-07-11 09:00"),
+      "assigned-for-repair": ts("2026-07-11 09:30"),
+    },
     assignedTechnician: "R. Kumar",
     aiRecommendation: "Seal weeping without a temperature or vibration trend shift typically indicates a seal-face wear issue rather than bearing distress. Recommend mechanical seal replacement during the current standby window on BFP-B.",
     maintenanceReview: {

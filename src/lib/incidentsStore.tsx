@@ -49,15 +49,30 @@ export function IncidentsProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(incidents));
   }, [incidents, ready]);
 
+  // Stamps a real epoch timestamp on creation and on every future stage transition — automatically,
+  // so no call site has to remember to do it — giving Analytics a reliable clock for MTTR/MTBF math
+  // instead of parsing the locale display strings used for createdAt/activityLog.time.
   const addIncident = useCallback((incident: WorkflowIncident) => {
-    setIncidents((prev) => [incident, ...prev]);
+    const stamped: WorkflowIncident = {
+      ...incident,
+      createdAtTs: incident.createdAtTs ?? Date.now(),
+      stageEnteredAt: { ...incident.stageEnteredAt, [incident.stage]: incident.stageEnteredAt?.[incident.stage] ?? Date.now() },
+    };
+    setIncidents((prev) => [stamped, ...prev]);
   }, []);
 
   const updateIncident = useCallback(
     (id: string, patch: Partial<WorkflowIncident>, activity: Omit<IncidentActivity, "time">) => {
       setIncidents((prev) =>
         prev.map((i) =>
-          i.id === id ? { ...i, ...patch, activityLog: [...i.activityLog, { ...activity, time: now() }] } : i
+          i.id === id
+            ? {
+                ...i,
+                ...patch,
+                stageEnteredAt: patch.stage ? { ...i.stageEnteredAt, [patch.stage]: Date.now() } : i.stageEnteredAt,
+                activityLog: [...i.activityLog, { ...activity, time: now() }],
+              }
+            : i
         )
       );
     },

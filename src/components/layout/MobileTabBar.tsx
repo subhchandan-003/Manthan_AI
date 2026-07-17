@@ -12,6 +12,7 @@ import {
   BarChart3,
   Settings,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { getRoleAccess, type NavKey } from "@/lib/roles";
@@ -21,6 +22,7 @@ const NAV_ITEMS: { href: string; key: NavKey; label: string; icon: typeof Layout
   { href: "/chat", key: "chat", label: "Assistant", icon: MessageSquare },
   { href: "/documents", key: "documents", label: "Docs", icon: FileText },
   { href: "/incidents", key: "incidents", label: "Incidents", icon: ClipboardList },
+  { href: "/knowledge", key: "knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/maintenance", key: "maintenance", label: "Maint.", icon: Wrench },
   { href: "/safety", key: "safety", label: "Safety", icon: ShieldAlert },
   { href: "/analytics", key: "analytics", label: "Insights", icon: BarChart3 },

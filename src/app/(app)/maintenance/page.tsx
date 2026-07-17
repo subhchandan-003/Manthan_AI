@@ -4,27 +4,32 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft, Siren } from "lucide-react";
+import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft, Siren, CheckCircle2 } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
 import { getRoleAccess } from "@/lib/roles";
 import { useIncidents } from "@/lib/incidentsStore";
+import { useWorkOrders } from "@/lib/workOrdersStore";
 import { STAGE_LABEL } from "@/lib/incidentWorkflow";
-import { equipment, maintenanceEvents, spareParts } from "@/lib/mock-data";
-import type { EquipmentItem, Role, WorkflowIncident } from "@/lib/types";
+import { equipment, maintenanceEvents, spareParts, TECHNICIANS } from "@/lib/mock-data";
+import type { EquipmentItem, Role, WorkflowIncident, WorkOrder } from "@/lib/types";
 
-type Tab = "overview" | "history" | "recommendations" | "sops" | "spares" | "troubleshooting";
+type Tab = "overview" | "history" | "recommendations" | "sops" | "spares" | "troubleshooting" | "workorders";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "history", label: "Maintenance History" },
+  { key: "workorders", label: "Work Orders" },
   { key: "recommendations", label: "AI Recommendations" },
   { key: "sops", label: "Linked SOPs" },
   { key: "spares", label: "Spare Parts" },
   { key: "troubleshooting", label: "Troubleshooting" },
 ];
+
+const woStatusTone = { open: "amber", "in-progress": "blue", completed: "green" } as const;
+const woStatusLabel = { open: "Open", "in-progress": "In Progress", completed: "Completed" } as const;
 
 const eventTone = { PM: "green", CM: "amber", Overhaul: "blue", Emergency: "red" } as const;
 
@@ -63,6 +68,7 @@ function MaintenanceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { incidents, addIncident, updateIncident } = useIncidents();
+  const { workOrders, addWorkOrder, updateWorkOrder } = useWorkOrders();
   const isReadOnly = getRoleAccess(session?.role).maintenance === "readonly";
   // Guards against double-clicks the same way chat's "Ask AI to Investigate" does — this
   // updates synchronously so a second click always sees the first click's claim, even before
@@ -78,7 +84,8 @@ function MaintenanceContent() {
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const [woModalOpen, setWoModalOpen] = useState(false);
   const [woDescription, setWoDescription] = useState("");
-  const [woPriority, setWoPriority] = useState("Medium");
+  const [woPriority, setWoPriority] = useState<WorkOrder["priority"]>("Medium");
+  const [woAssignedTechnician, setWoAssignedTechnician] = useState("");
   const [requestedParts, setRequestedParts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -104,6 +111,7 @@ function MaintenanceContent() {
   );
   const history = maintenanceEvents.filter((m) => m.equipmentId === selected.id);
   const activeIncidents = incidents.filter((i) => i.equipmentTag === selected.tag && i.stage !== "closed");
+  const equipmentWorkOrders = workOrders.filter((w) => w.equipmentTag === selected.tag);
   const sops = SOP_LIBRARY[selected.tag] ?? ["No SOPs linked yet — request document indexing."];
   const steps = symptom ? TROUBLESHOOT_STEPS[symptom] ?? [] : [];
 
@@ -117,13 +125,49 @@ function MaintenanceContent() {
 
   function submitWorkOrder(e: React.FormEvent) {
     e.preventDefault();
+    if (!woDescription.trim()) {
+      toast.error("Describe the work required first.");
+      return;
+    }
     const woNumber = `WO-${Math.floor(10000 + Math.random() * 89999)}`;
+    const nowTs = Date.now();
+    addWorkOrder({
+      id: `wo-${nowTs}`,
+      woNumber,
+      equipmentTag: selected.tag,
+      equipmentName: selected.name,
+      description: woDescription,
+      priority: woPriority,
+      status: "open",
+      createdBy: session?.employeeName ?? "You",
+      createdByRole: (session?.role ?? "Maintenance Engineer") as Role,
+      createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      createdAtTs: nowTs,
+      assignedTechnician: woAssignedTechnician || undefined,
+    });
     toast.success(`Work order ${woNumber} created`, {
       description: `${selected.tag} · Priority: ${woPriority}`,
     });
+    setTab("workorders");
     setWoModalOpen(false);
     setWoDescription("");
     setWoPriority("Medium");
+    setWoAssignedTechnician("");
+  }
+
+  function advanceWorkOrder(wo: WorkOrder) {
+    if (wo.status === "open") {
+      updateWorkOrder(wo.id, { status: "in-progress" });
+      toast.success("Work order in progress", { description: wo.woNumber });
+    } else if (wo.status === "in-progress") {
+      const nowTs = Date.now();
+      updateWorkOrder(wo.id, {
+        status: "completed",
+        completedAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+        completedAtTs: nowTs,
+      });
+      toast.success("Work order completed", { description: wo.woNumber });
+    }
   }
 
   function requestSparePart(partNumber: string) {
@@ -376,6 +420,47 @@ function MaintenanceContent() {
             </div>
           )}
 
+          {tab === "workorders" && (
+            <div className="flex flex-col gap-4">
+              <p className="text-xs text-text-muted">
+                {equipmentWorkOrders.length} work order{equipmentWorkOrders.length === 1 ? "" : "s"} for this equipment
+              </p>
+              {equipmentWorkOrders.length === 0 && (
+                <p className="text-sm text-text-muted">No work orders raised yet. Use &quot;Generate Work Order&quot; above to create one.</p>
+              )}
+              {equipmentWorkOrders.map((wo) => (
+                <div key={wo.id} className="rounded-lg border border-border-subtle bg-bg-secondary p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-[11px] text-accent-cyan">{wo.woNumber}</p>
+                      <p className="mt-1 text-sm font-medium text-text-primary">{wo.description}</p>
+                      <p className="mt-1 text-[11px] text-text-muted">
+                        Raised by {wo.createdBy} ({wo.createdByRole}) · {wo.createdAt}
+                        {wo.assignedTechnician && <> · Assigned to {wo.assignedTechnician}</>}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <Badge tone={wo.priority === "Critical" ? "red" : wo.priority === "High" ? "amber" : "blue"}>{wo.priority}</Badge>
+                      <Badge tone={woStatusTone[wo.status]}>{woStatusLabel[wo.status]}</Badge>
+                    </div>
+                  </div>
+                  {wo.status === "completed" ? (
+                    <p className="mt-3 text-[11px] text-accent-green">Completed {wo.completedAt}</p>
+                  ) : (
+                    !isReadOnly && (
+                      <button
+                        onClick={() => advanceWorkOrder(wo)}
+                        className="mt-3 flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {wo.status === "open" ? "Start Work" : "Mark Complete"}
+                      </button>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {tab === "recommendations" && (
             <div className="flex flex-col gap-4">
               {selected.health !== "healthy" && (
@@ -546,7 +631,7 @@ function MaintenanceContent() {
             <label className="mb-1.5 block font-medium text-text-secondary">Priority</label>
             <select
               value={woPriority}
-              onChange={(e) => setWoPriority(e.target.value)}
+              onChange={(e) => setWoPriority(e.target.value as WorkOrder["priority"])}
               className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary focus:border-border-active focus:outline-none"
             >
               <option>Low</option>
@@ -564,6 +649,21 @@ function MaintenanceContent() {
               placeholder="Describe the work required..."
               className="w-full resize-none rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-muted focus:border-border-active focus:outline-none"
             />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Assign Technician (optional)</label>
+            <select
+              value={woAssignedTechnician}
+              onChange={(e) => setWoAssignedTechnician(e.target.value)}
+              className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary focus:border-border-active focus:outline-none"
+            >
+              <option value="">Unassigned</option>
+              {TECHNICIANS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
           <button type="submit" className="mt-1 rounded-md bg-accent-blue py-2.5 font-semibold text-white transition hover:brightness-90">
             Create Work Order

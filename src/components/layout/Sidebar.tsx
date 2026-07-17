@@ -13,6 +13,7 @@ import {
   Settings,
   Eye,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "@/lib/session";
@@ -23,6 +24,7 @@ const NAV_ITEMS: { href: string; key: NavKey; label: string; icon: typeof Layout
   { href: "/chat", key: "chat", label: "AI Query Assistant", icon: MessageSquare },
   { href: "/documents", key: "documents", label: "Document Intelligence Hub", icon: FileText },
   { href: "/incidents", key: "incidents", label: "Incident Workflow", icon: ClipboardList },
+  { href: "/knowledge", key: "knowledge", label: "Knowledge Base", icon: BookOpen },
   { href: "/maintenance", key: "maintenance", label: "Maintenance & Operations", icon: Wrench },
   { href: "/safety", key: "safety", label: "Safety & Compliance", icon: ShieldAlert },
   { href: "/analytics", key: "analytics", label: "Analytics & Insights", icon: BarChart3 },

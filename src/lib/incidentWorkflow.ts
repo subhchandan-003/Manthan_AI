@@ -107,6 +107,69 @@ export function nextStageAfterApproval(incident: WorkflowIncident): IncidentStag
   return incident.isCritical ? "manager-approval" : "assigned-for-repair";
 }
 
+/** The stage that marks a repair as physically done — MTTR's end marker, checked in order. */
+const REPAIR_DONE_STAGES: IncidentStage[] = ["maintenance-completed", "rca-generated", "knowledge-saved", "closed"];
+
+export interface MttrResult {
+  avgHours: number | null;
+  sampleSize: number;
+}
+
+/**
+ * Mean Time To Repair: average hours from incident creation to the repair being marked done.
+ * Uses createdAtTs/stageEnteredAt (real epoch timestamps), not the locale display strings, so
+ * this is exact rather than parsed/guessed. Incidents still open, or seeded before these fields
+ * existed, are simply excluded from the sample rather than skewing it with a bad guess.
+ */
+export function computeMttr(incidents: WorkflowIncident[]): MttrResult {
+  const durationsHours: number[] = [];
+  for (const incident of incidents) {
+    if (!incident.createdAtTs) continue;
+    const doneTs = REPAIR_DONE_STAGES.map((s) => incident.stageEnteredAt?.[s]).find((t): t is number => t !== undefined);
+    if (!doneTs) continue;
+    const hours = (doneTs - incident.createdAtTs) / 3_600_000;
+    if (hours > 0) durationsHours.push(hours);
+  }
+  if (durationsHours.length === 0) return { avgHours: null, sampleSize: 0 };
+  return { avgHours: durationsHours.reduce((a, b) => a + b, 0) / durationsHours.length, sampleSize: durationsHours.length };
+}
+
+export interface MtbfEntry {
+  tag: string;
+  avgDays: number;
+  incidentCount: number;
+}
+
+/**
+ * Mean Time Between Failures per equipment: average gap (in days) between consecutive incidents
+ * raised against the same equipment tag. Needs at least 2 timestamped incidents for a tag to
+ * produce a value — sorted with the shortest MTBF (most frequently failing equipment) first,
+ * since that's the actionable end of the list for a Maintenance Manager.
+ */
+export function computeMtbfByEquipment(incidents: WorkflowIncident[]): MtbfEntry[] {
+  const byTag = new Map<string, number[]>();
+  for (const incident of incidents) {
+    if (!incident.equipmentTag || !incident.createdAtTs) continue;
+    const list = byTag.get(incident.equipmentTag) ?? [];
+    list.push(incident.createdAtTs);
+    byTag.set(incident.equipmentTag, list);
+  }
+
+  const entries: MtbfEntry[] = [];
+  for (const [tag, timestamps] of byTag) {
+    if (timestamps.length < 2) continue;
+    const sorted = [...timestamps].sort((a, b) => a - b);
+    const gapsDays: number[] = [];
+    for (let i = 1; i < sorted.length; i++) gapsDays.push((sorted[i] - sorted[i - 1]) / 86_400_000);
+    entries.push({
+      tag,
+      avgDays: gapsDays.reduce((a, b) => a + b, 0) / gapsDays.length,
+      incidentCount: timestamps.length,
+    });
+  }
+  return entries.sort((a, b) => a.avgDays - b.avgDays);
+}
+
 export function draftRca(incident: WorkflowIncident): string {
   const cause = incident.aiRecommendation ?? "Root cause under investigation.";
   const corrective = incident.maintenanceReview?.correctiveAction ?? "Corrective action pending documentation.";

@@ -3,6 +3,7 @@ import { DM_Sans, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { SessionProvider } from "@/lib/session";
 import { IncidentsProvider } from "@/lib/incidentsStore";
+import { WorkOrdersProvider } from "@/lib/workOrdersStore";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -47,7 +48,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-bg-primary text-text-primary font-sans">
         <ThemeProvider>
           <SessionProvider>
-            <IncidentsProvider>{children}</IncidentsProvider>
+            <IncidentsProvider>
+              <WorkOrdersProvider>{children}</WorkOrdersProvider>
+            </IncidentsProvider>
           </SessionProvider>
           <Toaster
             theme="system"
