@@ -22,10 +22,24 @@ ${matchedEquipment ? `Equipment: ${matchedEquipment.tag} — ${matchedEquipment.
 Prior RCA case studies on record:
 ${priorCases}
 
-Act as the automated "AI Investigation" step of an incident-response workflow. In under 80 words, give the
-Maintenance Engineer who will review this next: (1) a likely root-cause hypothesis, referencing a prior case
-study by name if the pattern matches, (2) one concrete recommended check or action. Be direct and technical —
-no preamble, no headings, just the analysis.`;
+Act as the automated "AI Investigation" step of an incident-response workflow. Give the Maintenance Engineer
+who will review this next a structured investigation, formatted as exactly these four paragraphs — each
+starting with the label below followed by a colon, separated by a blank line, no markdown and no extra
+headings:
+
+Root Cause Hypothesis: 2-3 sentences on the most likely cause, referencing a prior case study by name if the
+pattern matches.
+
+Supporting Evidence: what specific data points (readings, trends, prior failure signatures) this diagnosis is
+based on.
+
+Recommended Actions: 2-3 concrete checks or actions the Maintenance Engineer should verify, numbered 1. 2. 3.
+each on its own line.
+
+Confidence: High, Medium, or Low — one sentence on why.
+
+Be direct and technical. Ground everything in the equipment data and prior case studies provided above — do
+not invent details not present here.`;
 
   try {
     const { text } = await generateText({
@@ -42,7 +56,9 @@ no preamble, no headings, just the analysis.`;
 }
 
 function fallbackRecommendation(title: string, tag?: string) {
-  return `AI investigation unavailable right now — routed to Maintenance Engineer for manual review of "${title}"${
+  return `Root Cause Hypothesis: AI investigation unavailable right now — routed to Maintenance Engineer for manual review of "${title}"${
     tag ? ` on ${tag}` : ""
-  }. Cross-check against the equipment's maintenance history and the IJMET 2010 case-study library before diagnosing.`;
+  }.
+
+Recommended Actions: Cross-check against the equipment's maintenance history and the IJMET 2010 case-study library before diagnosing.`;
 }

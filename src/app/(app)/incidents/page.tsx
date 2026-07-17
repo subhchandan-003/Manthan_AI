@@ -521,7 +521,7 @@ function IncidentDetail({
 
       {incident.aiRecommendation && (
         <Section icon={<Sparkles className="h-4 w-4 text-accent-cyan" />} title="AI Recommendation" aiGenerated>
-          {incident.aiRecommendation}
+          <AiText text={incident.aiRecommendation} />
         </Section>
       )}
       {incident.maintenanceReview && (
@@ -841,6 +841,34 @@ function Section({ icon, title, children, aiGenerated }: { icon?: React.ReactNod
         {icon} {title}
       </h3>
       <div className="mt-2 text-xs leading-relaxed text-text-secondary">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Renders AI-generated text that's structured as "Label: content" paragraphs (separated by
+ * blank lines) with the label bolded. Older unlabeled recommendations (a handful of seed
+ * records predate this format) just render as a single plain paragraph — same as before.
+ */
+function AiText({ text }: { text: string }) {
+  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim());
+  return (
+    <div className="flex flex-col gap-2.5">
+      {paragraphs.map((p, idx) => {
+        const match = p.match(/^([A-Za-z /]+):\s*([\s\S]*)$/);
+        if (match) {
+          return (
+            <p key={idx} className="whitespace-pre-wrap">
+              <span className="font-semibold text-text-primary">{match[1]}:</span> {match[2]}
+            </p>
+          );
+        }
+        return (
+          <p key={idx} className="whitespace-pre-wrap">
+            {p}
+          </p>
+        );
+      })}
     </div>
   );
 }

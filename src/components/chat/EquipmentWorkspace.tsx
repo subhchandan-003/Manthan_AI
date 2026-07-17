@@ -371,7 +371,7 @@ export function EquipmentWorkspace({
                     <span className="text-[11px] text-text-muted">{r.similarity}% similarity</span>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-text-secondary">
+                <p className="mt-2 line-clamp-3 text-xs text-text-secondary">
                   <span className="font-medium text-text-primary">Root cause:</span> {r.rootCause}
                 </p>
                 <div className="mt-3 flex gap-2">
