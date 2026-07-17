@@ -1,9 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { equipment } from "./mock-data";
 import type { WorkOrder } from "./types";
 
 const STORAGE_KEY = "manthan-workorders-v1";
+const PM_MARKER = "Scheduled preventive maintenance";
 
 interface WorkOrdersContextValue {
   workOrders: WorkOrder[];
@@ -14,6 +16,44 @@ interface WorkOrdersContextValue {
 
 const WorkOrdersContext = createContext<WorkOrdersContextValue | null>(null);
 
+/**
+ * Auto-raises a Preventive work order for any equipment whose nextPM date has passed and
+ * doesn't already have one open — this is what actually closes the "PM is just a date field"
+ * gap: a due date on its own does nothing without something turning it into real work.
+ */
+function generateDuePmWorkOrders(existing: WorkOrder[]): WorkOrder[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const generated: WorkOrder[] = [];
+
+  for (const e of equipment) {
+    const due = new Date(e.nextPM);
+    if (due > today) continue;
+    const alreadyOpen = existing
+      .concat(generated)
+      .some((w) => w.equipmentTag === e.tag && w.type === "Preventive" && w.status !== "completed" && w.description.startsWith(PM_MARKER));
+    if (alreadyOpen) continue;
+
+    const nowTs = Date.now();
+    generated.push({
+      id: `wo-pm-${e.tag}-${nowTs}`,
+      woNumber: `WO-${Math.floor(10000 + Math.random() * 89999)}`,
+      equipmentTag: e.tag,
+      equipmentName: e.name,
+      description: `${PM_MARKER} — due ${e.nextPM}.`,
+      priority: e.health === "critical" ? "Critical" : e.health === "warning" ? "High" : "Medium",
+      type: "Preventive",
+      status: "open",
+      createdBy: "MANTHAN",
+      createdByRole: "System",
+      createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      createdAtTs: nowTs,
+      dueDate: e.nextPM,
+    });
+  }
+  return generated;
+}
+
 export function WorkOrdersProvider({ children }: { children: React.ReactNode }) {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [ready, setReady] = useState(false);
@@ -21,13 +61,15 @@ export function WorkOrdersProvider({ children }: { children: React.ReactNode }) 
   // Load persisted work orders once on mount so they survive navigation/login switches.
   useEffect(() => {
     const raw = window.localStorage.getItem(STORAGE_KEY);
+    let loaded: WorkOrder[] = [];
     if (raw) {
       try {
-        setWorkOrders(JSON.parse(raw));
+        loaded = JSON.parse(raw);
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
     }
+    setWorkOrders([...generateDuePmWorkOrders(loaded), ...loaded]);
     setReady(true);
   }, []);
 

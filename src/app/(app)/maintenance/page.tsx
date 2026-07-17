@@ -30,6 +30,12 @@ const TABS: { key: Tab; label: string }[] = [
 
 const woStatusTone = { open: "amber", "in-progress": "blue", completed: "green" } as const;
 const woStatusLabel = { open: "Open", "in-progress": "In Progress", completed: "Completed" } as const;
+const woTypeTone = { Preventive: "green", Corrective: "amber", Emergency: "red" } as const;
+
+function isWorkOrderOverdue(wo: WorkOrder): boolean {
+  if (wo.status === "completed" || !wo.dueDate) return false;
+  return new Date(wo.dueDate) < new Date(new Date().toDateString());
+}
 
 const eventTone = { PM: "green", CM: "amber", Overhaul: "blue", Emergency: "red" } as const;
 
@@ -85,7 +91,10 @@ function MaintenanceContent() {
   const [woModalOpen, setWoModalOpen] = useState(false);
   const [woDescription, setWoDescription] = useState("");
   const [woPriority, setWoPriority] = useState<WorkOrder["priority"]>("Medium");
+  const [woType, setWoType] = useState<WorkOrder["type"]>("Corrective");
   const [woAssignedTechnician, setWoAssignedTechnician] = useState("");
+  const [woDueDate, setWoDueDate] = useState("");
+  const [woReservedPart, setWoReservedPart] = useState("");
   const [requestedParts, setRequestedParts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -138,12 +147,15 @@ function MaintenanceContent() {
       equipmentName: selected.name,
       description: woDescription,
       priority: woPriority,
+      type: woType,
       status: "open",
       createdBy: session?.employeeName ?? "You",
       createdByRole: (session?.role ?? "Maintenance Engineer") as Role,
       createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
       createdAtTs: nowTs,
       assignedTechnician: woAssignedTechnician || undefined,
+      dueDate: woDueDate || undefined,
+      reservedPart: woReservedPart || undefined,
     });
     toast.success(`Work order ${woNumber} created`, {
       description: `${selected.tag} · Priority: ${woPriority}`,
@@ -152,7 +164,10 @@ function MaintenanceContent() {
     setWoModalOpen(false);
     setWoDescription("");
     setWoPriority("Medium");
+    setWoType("Corrective");
     setWoAssignedTechnician("");
+    setWoDueDate("");
+    setWoReservedPart("");
   }
 
   function advanceWorkOrder(wo: WorkOrder) {
@@ -437,11 +452,15 @@ function MaintenanceContent() {
                       <p className="mt-1 text-[11px] text-text-muted">
                         Raised by {wo.createdBy} ({wo.createdByRole}) · {wo.createdAt}
                         {wo.assignedTechnician && <> · Assigned to {wo.assignedTechnician}</>}
+                        {wo.dueDate && <> · Due {wo.dueDate}</>}
+                        {wo.reservedPart && <> · Part reserved: {wo.reservedPart}</>}
                       </p>
                     </div>
-                    <div className="flex shrink-0 gap-1.5">
+                    <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                      <Badge tone={woTypeTone[wo.type]}>{wo.type}</Badge>
                       <Badge tone={wo.priority === "Critical" ? "red" : wo.priority === "High" ? "amber" : "blue"}>{wo.priority}</Badge>
                       <Badge tone={woStatusTone[wo.status]}>{woStatusLabel[wo.status]}</Badge>
+                      {isWorkOrderOverdue(wo) && <Badge tone="red">Overdue</Badge>}
                     </div>
                   </div>
                   {wo.status === "completed" ? (
@@ -641,6 +660,18 @@ function MaintenanceContent() {
             </select>
           </div>
           <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Type</label>
+            <select
+              value={woType}
+              onChange={(e) => setWoType(e.target.value as WorkOrder["type"])}
+              className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary focus:border-border-active focus:outline-none"
+            >
+              <option>Preventive</option>
+              <option>Corrective</option>
+              <option>Emergency</option>
+            </select>
+          </div>
+          <div>
             <label className="mb-1.5 block font-medium text-text-secondary">Description of Work</label>
             <textarea
               value={woDescription}
@@ -661,6 +692,30 @@ function MaintenanceContent() {
               {TECHNICIANS.map((name) => (
                 <option key={name} value={name}>
                   {name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Due Date (optional)</label>
+            <input
+              type="date"
+              value={woDueDate}
+              onChange={(e) => setWoDueDate(e.target.value)}
+              className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary focus:border-border-active focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Reserve Spare Part (optional)</label>
+            <select
+              value={woReservedPart}
+              onChange={(e) => setWoReservedPart(e.target.value)}
+              className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary focus:border-border-active focus:outline-none"
+            >
+              <option value="">None</option>
+              {spareParts.map((p) => (
+                <option key={p.partNumber} value={p.partNumber}>
+                  {p.partNumber} — {p.description}
                 </option>
               ))}
             </select>

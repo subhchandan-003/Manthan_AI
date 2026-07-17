@@ -14,6 +14,7 @@ import {
   Eye,
   ClipboardList,
   BookOpen,
+  ClipboardPlus,
 } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "@/lib/session";
@@ -26,6 +27,7 @@ const NAV_ITEMS: { href: string; key: NavKey; label: string; icon: typeof Layout
   { href: "/incidents", key: "incidents", label: "Incident Workflow", icon: ClipboardList },
   { href: "/knowledge", key: "knowledge", label: "Knowledge Base", icon: BookOpen },
   { href: "/maintenance", key: "maintenance", label: "Maintenance & Operations", icon: Wrench },
+  { href: "/work-orders", key: "work-orders", label: "Work Orders", icon: ClipboardPlus },
   { href: "/safety", key: "safety", label: "Safety & Compliance", icon: ShieldAlert },
   { href: "/analytics", key: "analytics", label: "Analytics & Insights", icon: BarChart3 },
   { href: "/settings", key: "settings", label: "Settings & Admin", icon: Settings },

@@ -193,12 +193,21 @@ export interface WorkOrder {
   equipmentName: string;
   description: string;
   priority: "Low" | "Medium" | "High" | "Critical";
+  /** Matches the Preventive/Corrective/Emergency taxonomy used in Analytics' cost breakdown. */
+  type: "Preventive" | "Corrective" | "Emergency";
   status: "open" | "in-progress" | "completed";
   createdBy: string;
-  createdByRole: Role;
+  /** "System" for auto-generated PM work orders raised off a nextPM due date. */
+  createdByRole: Role | "System";
   createdAt: string;
   createdAtTs: number;
   assignedTechnician?: string;
+  /** Set when this work order was created from an Incident Workflow approval — links the two records. */
+  incidentId?: string;
+  /** Target completion date (YYYY-MM-DD) — used to flag overdue work orders. */
+  dueDate?: string;
+  /** Spare part reserved against this job, by part number. */
+  reservedPart?: string;
   completedAt?: string;
   completedAtTs?: number;
 }

@@ -13,6 +13,7 @@ import {
   Settings,
   ClipboardList,
   BookOpen,
+  ClipboardPlus,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { getRoleAccess, type NavKey } from "@/lib/roles";
@@ -24,6 +25,7 @@ const NAV_ITEMS: { href: string; key: NavKey; label: string; icon: typeof Layout
   { href: "/incidents", key: "incidents", label: "Incidents", icon: ClipboardList },
   { href: "/knowledge", key: "knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/maintenance", key: "maintenance", label: "Maint.", icon: Wrench },
+  { href: "/work-orders", key: "work-orders", label: "Work Orders", icon: ClipboardPlus },
   { href: "/safety", key: "safety", label: "Safety", icon: ShieldAlert },
   { href: "/analytics", key: "analytics", label: "Insights", icon: BarChart3 },
   { href: "/settings", key: "settings", label: "Settings", icon: Settings },

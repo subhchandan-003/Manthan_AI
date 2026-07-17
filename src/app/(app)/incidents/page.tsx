@@ -29,6 +29,7 @@ import { Modal } from "@/components/ui/Modal";
 import { DocumentViewerModal, type EvidenceItem } from "@/components/chat/DocumentViewerModal";
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
+import { useWorkOrders } from "@/lib/workOrdersStore";
 import { equipment, TECHNICIANS } from "@/lib/mock-data";
 import {
   STAGE_ORDER,
@@ -290,6 +291,7 @@ function IncidentDetail({
   const isMyTurn = actionableRole(incident) === role;
   const canActAsRaiser = role === "Technician / Shift Operator" && incident.stage !== "closed";
   const busy = useMemo(() => busyTechnicians(allIncidents, incident.id), [allIncidents, incident.id]);
+  const { addWorkOrder } = useWorkOrders();
 
   const [notes, setNotes] = useState("");
   const [correctiveAction, setCorrectiveAction] = useState("");
@@ -350,6 +352,26 @@ function IncidentDetail({
       { plantEngineerApproval: { by: actorName, approved: true, workOrderNo: workOrderNo || undefined, notes }, stage: nextStageAfterApproval(patched) },
       { actor: actorName, role, action: `Approved maintenance plan${workOrderNo ? ` — created ${workOrderNo}` : ""}` }
     );
+    if (workOrderNo) {
+      const eq = equipment.find((e) => e.tag === incident.equipmentTag);
+      const nowTs = Date.now();
+      addWorkOrder({
+        id: `wo-${incident.id}-${nowTs}`,
+        woNumber: workOrderNo,
+        equipmentTag: incident.equipmentTag ?? "General",
+        equipmentName: eq?.name ?? incident.equipmentTag ?? "General",
+        description: incident.title,
+        priority: incident.severity === "critical" ? "Critical" : incident.severity === "high" ? "High" : incident.severity === "medium" ? "Medium" : "Low",
+        type: "Corrective",
+        status: "open",
+        createdBy: actorName,
+        createdByRole: role,
+        createdAt: incident.createdAt,
+        createdAtTs: nowTs,
+        assignedTechnician: incident.assignedTechnician,
+        incidentId: incident.id,
+      });
+    }
     toast.success("Maintenance plan approved");
   }
 

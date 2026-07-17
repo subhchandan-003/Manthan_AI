@@ -6,6 +6,7 @@ export type NavKey =
   | "documents"
   | "pid-viewer"
   | "maintenance"
+  | "work-orders"
   | "safety"
   | "incidents"
   | "knowledge"
@@ -57,7 +58,7 @@ export interface RoleAccess {
  */
 export const ROLE_ACCESS: Record<Role, RoleAccess> = {
   "Technician / Shift Operator": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "knowledge", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
     dashboardLayout: {
@@ -66,7 +67,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Maintenance Engineer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "knowledge", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "full",
     safety: "none",
     dashboardLayout: {
@@ -75,7 +76,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Plant Engineer": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "incidents", "knowledge", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
     dashboardLayout: {
@@ -93,7 +94,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     },
   },
   "Maintenance Manager / Reliability Manager": {
-    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "safety", "incidents", "knowledge", "analytics", "settings"],
+    nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "safety", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "full",
     safety: "full",
     dashboardLayout: {
@@ -113,6 +114,7 @@ const KNOWN_NAV_KEYS: NavKey[] = [
   "documents",
   "pid-viewer",
   "maintenance",
+  "work-orders",
   "safety",
   "incidents",
   "knowledge",
