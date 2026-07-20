@@ -3,7 +3,15 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { equipment } from "./mock-data";
 import { formatDateTime, formatDate } from "./dateFormat";
+import { useIncidents } from "./incidentsStore";
 import type { WorkOrder } from "./types";
+
+const WO_STATUS_VERB: Record<WorkOrder["status"], string> = {
+  open: "reopened",
+  "in-progress": "started",
+  completed: "marked complete",
+  cancelled: "cancelled",
+};
 
 const STORAGE_KEY = "manthan-workorders-v1";
 const PM_MARKER = "Scheduled preventive maintenance";
@@ -56,6 +64,7 @@ function generateDuePmWorkOrders(existing: WorkOrder[]): WorkOrder[] {
 }
 
 export function WorkOrdersProvider({ children }: { children: React.ReactNode }) {
+  const { updateIncident } = useIncidents();
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [ready, setReady] = useState(false);
 
@@ -84,9 +93,23 @@ export function WorkOrdersProvider({ children }: { children: React.ReactNode }) 
     setWorkOrders((prev) => [wo, ...prev]);
   }, []);
 
-  const updateWorkOrder = useCallback((id: string, patch: Partial<WorkOrder>) => {
-    setWorkOrders((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
-  }, []);
+  // Flags the linked incident's Activity Log when a linked work order's status changes —
+  // deliberately just a note, not a stage change. Auto-advancing the incident's own stage
+  // would bypass the Maintenance Engineer's required field-verification step at
+  // "Assigned for Repair", which exists specifically so repairs aren't self-certified.
+  const updateWorkOrder = useCallback(
+    (id: string, patch: Partial<WorkOrder>) => {
+      setWorkOrders((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+
+      if (patch.status) {
+        const wo = workOrders.find((w) => w.id === id);
+        if (wo?.incidentId && patch.status !== wo.status) {
+          updateIncident(wo.incidentId, {}, { actor: "MANTHAN", role: "System", action: `Linked work order ${wo.woNumber} ${WO_STATUS_VERB[patch.status]}` });
+        }
+      }
+    },
+    [workOrders, updateIncident]
+  );
 
   return (
     <WorkOrdersContext.Provider value={{ workOrders, ready, addWorkOrder, updateWorkOrder }}>

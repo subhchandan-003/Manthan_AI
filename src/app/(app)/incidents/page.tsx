@@ -345,31 +345,33 @@ function IncidentDetail({
 
   function plantEngineerDecision() {
     const patched = { ...incident, isCritical };
+    // Always create a real linked work order — previously this only happened if the Plant
+    // Engineer manually typed/generated a WO number, so an approval could silently skip
+    // creating one. Auto-generate it if they left the field blank.
+    const finalWorkOrderNo = workOrderNo || `WO-${Math.floor(10000 + Math.random() * 89999)}`;
     onUpdate(
-      { plantEngineerApproval: { by: actorName, approved: true, workOrderNo: workOrderNo || undefined, notes }, stage: nextStageAfterApproval(patched) },
-      { actor: actorName, role, action: `Approved maintenance plan${workOrderNo ? ` — created ${workOrderNo}` : ""}` }
+      { plantEngineerApproval: { by: actorName, approved: true, workOrderNo: finalWorkOrderNo, notes }, stage: nextStageAfterApproval(patched) },
+      { actor: actorName, role, action: `Approved maintenance plan — created ${finalWorkOrderNo}` }
     );
-    if (workOrderNo) {
-      const eq = equipment.find((e) => e.tag === incident.equipmentTag);
-      const nowTs = Date.now();
-      addWorkOrder({
-        id: `wo-${incident.id}-${nowTs}`,
-        woNumber: workOrderNo,
-        equipmentTag: incident.equipmentTag ?? "General",
-        equipmentName: eq?.name ?? incident.equipmentTag ?? "General",
-        description: incident.title,
-        priority: incident.severity === "critical" ? "Critical" : incident.severity === "high" ? "High" : incident.severity === "medium" ? "Medium" : "Low",
-        type: "Corrective",
-        status: "open",
-        createdBy: actorName,
-        createdByRole: role,
-        createdAt: incident.createdAt,
-        createdAtTs: nowTs,
-        assignedTechnician: incident.assignedTechnician,
-        incidentId: incident.id,
-      });
-    }
-    toast.success("Maintenance plan approved");
+    const eq = equipment.find((e) => e.tag === incident.equipmentTag);
+    const nowTs = Date.now();
+    addWorkOrder({
+      id: `wo-${incident.id}-${nowTs}`,
+      woNumber: finalWorkOrderNo,
+      equipmentTag: incident.equipmentTag ?? "General",
+      equipmentName: eq?.name ?? incident.equipmentTag ?? "General",
+      description: incident.title,
+      priority: incident.severity === "critical" ? "Critical" : incident.severity === "high" ? "High" : incident.severity === "medium" ? "Medium" : "Low",
+      type: "Corrective",
+      status: "open",
+      createdBy: actorName,
+      createdByRole: role,
+      createdAt: incident.createdAt,
+      createdAtTs: nowTs,
+      assignedTechnician: incident.assignedTechnician,
+      incidentId: incident.id,
+    });
+    toast.success("Maintenance plan approved", { description: `Work order ${finalWorkOrderNo} created` });
   }
 
   function managerApprove() {
@@ -722,7 +724,7 @@ function IncidentDetail({
 
       {isMyTurn && incident.stage === "plant-engineer-approval" && (
         <ActionPanel title="Plant Engineer Approval">
-          <Field label="Work Order Number">
+          <Field label="Work Order Number (auto-generated if left blank)">
             <div className="flex gap-2">
               <input value={workOrderNo} onChange={(e) => setWorkOrderNo(e.target.value)} placeholder="WO-XXXXX" className={inputCls} />
               <button
