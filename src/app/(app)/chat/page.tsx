@@ -32,6 +32,7 @@ import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { downloadTextFile, shareOrCopyLink } from "@/lib/download";
+import { formatDateTime, formatDate } from "@/lib/dateFormat";
 import { documents, equipment } from "@/lib/mock-data";
 import { findEquipmentInText } from "@/lib/equipmentIntelligence";
 import { buildEvidenceForDocument } from "@/lib/documentContent";
@@ -160,9 +161,9 @@ function ChatContent() {
       stage: "ai-investigation",
       raisedBy: session?.employeeName ?? "MANTHAN Assistant",
       raisedByRole: session?.role ?? "Technician / Shift Operator",
-      createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      createdAt: formatDateTime(),
       attachments: [],
-      activityLog: [{ time: new Date().toLocaleString("en-IN"), actor: session?.employeeName ?? "You", role: session?.role ?? "Technician / Shift Operator", action: "Requested AI investigation from Equipment Intelligence Workspace" }],
+      activityLog: [{ time: formatDateTime(), actor: session?.employeeName ?? "You", role: session?.role ?? "Technician / Shift Operator", action: "Requested AI investigation from Equipment Intelligence Workspace" }],
     };
     addIncident(created);
 
@@ -295,7 +296,7 @@ function ChatContent() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-text-primary">{e.name}</p>
                   <p className="truncate text-text-muted">
-                    {e.tag} · Next PM {e.nextPM}
+                    {e.tag} · Next PM {formatDate(e.nextPM)}
                   </p>
                 </div>
                 <Wrench className="h-3.5 w-3.5 shrink-0 text-text-muted" />

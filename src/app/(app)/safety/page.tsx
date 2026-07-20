@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { downloadTextFile, printToPdf, shareOrCopyLink } from "@/lib/download";
+import { formatDateTime, formatDate } from "@/lib/dateFormat";
 import {
   incidents,
   complianceRows,
@@ -87,10 +88,11 @@ export default function SafetyPage() {
   function generateComplianceReport() {
     const lines = [
       "MANTHAN — Compliance Report",
-      `Generated: ${new Date().toLocaleString("en-IN")}`,
+      `Generated: ${formatDateTime()}`,
       "",
       ...complianceRows.map(
-        (c) => `${c.regulation} — ${c.requirement}\n  Status: ${c.status.toUpperCase()} · Last audit: ${c.lastAudit} · Next due: ${c.nextDue}`
+        (c) =>
+          `${c.regulation} — ${c.requirement}\n  Status: ${c.status.toUpperCase()} · Last audit: ${formatDate(c.lastAudit)} · Next due: ${formatDate(c.nextDue)}`
       ),
     ];
     downloadTextFile("manthan-compliance-report.txt", lines.join("\n\n"));
@@ -213,7 +215,7 @@ export default function SafetyPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium text-text-primary">{inc.title}</p>
-                    <p className="mt-1.5 text-xs text-text-muted">{inc.date}</p>
+                    <p className="mt-1.5 text-xs text-text-muted">{formatDate(inc.date)}</p>
                   </div>
                   <div className="flex gap-1.5">
                     <Badge tone={inc.severity === "high" ? "red" : inc.severity === "medium" ? "amber" : "blue"}>{inc.severity}</Badge>
@@ -267,8 +269,8 @@ export default function SafetyPage() {
                       <td className="px-4 py-3">
                         <Badge tone={complianceTone[c.status]}>{c.status}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-text-secondary">{c.lastAudit}</td>
-                      <td className="px-4 py-3 text-text-secondary">{c.nextDue}</td>
+                      <td className="px-4 py-3 text-text-secondary">{formatDate(c.lastAudit)}</td>
+                      <td className="px-4 py-3 text-text-secondary">{formatDate(c.nextDue)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -308,7 +310,7 @@ export default function SafetyPage() {
                       <td className="px-4 py-3 text-text-secondary">{p.type}</td>
                       <td className="px-4 py-3 text-text-secondary">{p.location}</td>
                       <td className="px-4 py-3 text-text-secondary">{p.issuedTo}</td>
-                      <td className="px-4 py-3 text-text-secondary">{p.validTill}</td>
+                      <td className="px-4 py-3 text-text-secondary">{formatDate(p.validTill)}</td>
                       <td className="px-4 py-3">
                         <Badge tone={ptwTone[p.status]}>{p.status}</Badge>
                       </td>

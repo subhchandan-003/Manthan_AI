@@ -2,6 +2,7 @@
 
 import { FileText, FileSpreadsheet, FileType, Image as ImageIcon, GitBranch, File } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { formatDate } from "@/lib/dateFormat";
 import type { EvidenceCard } from "@/lib/documentViewer";
 import { PdfViewer } from "./PdfViewer";
 import { ExcelViewer } from "./ExcelViewer";
@@ -32,7 +33,7 @@ export function DocumentViewer({ evidence, onViewEquipmentSummary }: { evidence:
             <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-text-secondary sm:grid-cols-4">
               <span>Type: <span className="text-text-primary">{evidence.docType}</span></span>
               <span>Version: <span className="text-text-primary">{evidence.version ?? "1.0"}</span></span>
-              <span>Uploaded: <span className="text-text-primary">{evidence.uploadDate}</span></span>
+              <span>Uploaded: <span className="text-text-primary">{formatDate(evidence.uploadDate)}</span></span>
               <span>By: <span className="text-text-primary">{evidence.uploadedBy ?? "System"}</span></span>
               <span>Size: <span className="text-text-primary">{evidence.fileSize ?? "—"}</span></span>
               <span>Status: <Badge tone="green">{evidence.status ?? "Indexed"}</Badge></span>

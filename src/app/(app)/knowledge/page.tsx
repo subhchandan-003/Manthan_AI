@@ -6,6 +6,7 @@ import { Search, BookOpen, FileText } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useIncidents } from "@/lib/incidentsStore";
+import { formatDate } from "@/lib/dateFormat";
 import { incidents as caseStudies } from "@/lib/mock-data";
 
 export default function KnowledgePage() {
@@ -91,7 +92,7 @@ export default function KnowledgePage() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium text-text-primary">{c.title}</p>
-                  <p className="mt-1 text-[11px] text-text-muted">{c.date}</p>
+                  <p className="mt-1 text-[11px] text-text-muted">{formatDate(c.date)}</p>
                 </div>
                 <div className="flex gap-1.5">
                   <Badge tone={c.severity === "high" ? "red" : c.severity === "medium" ? "amber" : "blue"}>{c.severity}</Badge>

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft, Siren, CheckCircle2 } from "lucide-react";
+import { Search, MessageSquare, GitBranch, ClipboardPlus, AlertTriangle, Info, PackageCheck, ArrowLeft, Siren, CheckCircle2, Ban } from "lucide-react";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -12,6 +12,7 @@ import { useSession } from "@/lib/session";
 import { getRoleAccess } from "@/lib/roles";
 import { useIncidents } from "@/lib/incidentsStore";
 import { useWorkOrders } from "@/lib/workOrdersStore";
+import { formatDateTime, formatDate } from "@/lib/dateFormat";
 import { STAGE_LABEL } from "@/lib/incidentWorkflow";
 import { equipment, maintenanceEvents, spareParts, TECHNICIANS } from "@/lib/mock-data";
 import type { EquipmentItem, Role, WorkflowIncident, WorkOrder } from "@/lib/types";
@@ -28,8 +29,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "troubleshooting", label: "Troubleshooting" },
 ];
 
-const woStatusTone = { open: "amber", "in-progress": "blue", completed: "green" } as const;
-const woStatusLabel = { open: "Open", "in-progress": "In Progress", completed: "Completed" } as const;
+const woStatusTone = { open: "amber", "in-progress": "blue", completed: "green", cancelled: "neutral" } as const;
+const woStatusLabel = { open: "Open", "in-progress": "In Progress", completed: "Completed", cancelled: "Cancelled" } as const;
 const woTypeTone = { Preventive: "green", Corrective: "amber", Emergency: "red" } as const;
 
 function isWorkOrderOverdue(wo: WorkOrder): boolean {
@@ -96,6 +97,10 @@ function MaintenanceContent() {
   const [woDueDate, setWoDueDate] = useState("");
   const [woReservedPart, setWoReservedPart] = useState("");
   const [requestedParts, setRequestedParts] = useState<Set<string>>(new Set());
+  const [completingWo, setCompletingWo] = useState<WorkOrder | null>(null);
+  const [completionNotes, setCompletionNotes] = useState("");
+  const [cancellingWo, setCancellingWo] = useState<WorkOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   useEffect(() => {
     const tag = searchParams.get("tag");
@@ -104,6 +109,10 @@ function MaintenanceContent() {
     if (match) {
       setSelectedId(match.id);
       setMobileShowDetail(true);
+      if (searchParams.get("newWO")) {
+        setTab("workorders");
+        setWoModalOpen(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -151,7 +160,7 @@ function MaintenanceContent() {
       status: "open",
       createdBy: session?.employeeName ?? "You",
       createdByRole: (session?.role ?? "Maintenance Engineer") as Role,
-      createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      createdAt: formatDateTime(nowTs),
       createdAtTs: nowTs,
       assignedTechnician: woAssignedTechnician || undefined,
       dueDate: woDueDate || undefined,
@@ -175,14 +184,37 @@ function MaintenanceContent() {
       updateWorkOrder(wo.id, { status: "in-progress" });
       toast.success("Work order in progress", { description: wo.woNumber });
     } else if (wo.status === "in-progress") {
-      const nowTs = Date.now();
-      updateWorkOrder(wo.id, {
-        status: "completed",
-        completedAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
-        completedAtTs: nowTs,
-      });
-      toast.success("Work order completed", { description: wo.woNumber });
+      setCompletingWo(wo);
+      setCompletionNotes("");
     }
+  }
+
+  function confirmCompleteWorkOrder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!completingWo) return;
+    const nowTs = Date.now();
+    updateWorkOrder(completingWo.id, {
+      status: "completed",
+      completedAt: formatDateTime(nowTs),
+      completedAtTs: nowTs,
+      completionNotes: completionNotes || undefined,
+    });
+    toast.success("Work order completed", { description: completingWo.woNumber });
+    setCompletingWo(null);
+    setCompletionNotes("");
+  }
+
+  function confirmCancelWorkOrder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cancellingWo) return;
+    updateWorkOrder(cancellingWo.id, {
+      status: "cancelled",
+      cancelledBy: session?.employeeName ?? "You",
+      cancelReason: cancelReason || undefined,
+    });
+    toast.success("Work order cancelled", { description: cancellingWo.woNumber });
+    setCancellingWo(null);
+    setCancelReason("");
   }
 
   function requestSparePart(partNumber: string) {
@@ -209,7 +241,7 @@ function MaintenanceContent() {
     }. Running hours: ${e.runningHours.toLocaleString("en-IN")}.`;
 
     const id = `wf-${Date.now()}`;
-    const nowStr = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    const nowStr = formatDateTime();
     const created: WorkflowIncident = {
       id,
       title,
@@ -287,7 +319,7 @@ function MaintenanceContent() {
                 <p className="truncate font-mono text-[11px] text-text-secondary">{e.tag}</p>
                 <p className="truncate font-medium text-text-primary">{e.name}</p>
                 <p className="truncate text-[11px] text-text-muted">
-                  {e.system} · Next PM {e.nextPM}
+                  {e.system} · Next PM {formatDate(e.nextPM)}
                 </p>
               </div>
             </button>
@@ -392,7 +424,7 @@ function MaintenanceContent() {
                 <dl className="mt-4 space-y-2.5 text-xs">
                   <Row label="Type" value={selected.type} />
                   <Row label="OEM" value={selected.oem} />
-                  <Row label="Commission date" value={selected.commissionDate} />
+                  <Row label="Commission date" value={formatDate(selected.commissionDate)} />
                   <Row label="Location" value={selected.location} />
                   <Row label="Running hours" value={`${selected.runningHours.toLocaleString()} hrs`} />
                 </dl>
@@ -423,7 +455,7 @@ function MaintenanceContent() {
                   <div key={h.id} className="relative">
                     <span className="absolute -left-[27px] top-1 h-2.5 w-2.5 rounded-full bg-bg-primary ring-2 ring-border-active" />
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-medium text-text-primary">{h.date}</span>
+                      <span className="font-medium text-text-primary">{formatDate(h.date)}</span>
                       <Badge tone={eventTone[h.type]}>{h.type}</Badge>
                       <span className="text-text-muted">{h.durationHrs}h</span>
                     </div>
@@ -452,7 +484,7 @@ function MaintenanceContent() {
                       <p className="mt-1 text-[11px] text-text-muted">
                         Raised by {wo.createdBy} ({wo.createdByRole}) · {wo.createdAt}
                         {wo.assignedTechnician && <> · Assigned to {wo.assignedTechnician}</>}
-                        {wo.dueDate && <> · Due {wo.dueDate}</>}
+                        {wo.dueDate && <> · Due {formatDate(wo.dueDate)}</>}
                         {wo.reservedPart && <> · Part reserved: {wo.reservedPart}</>}
                       </p>
                     </div>
@@ -463,17 +495,38 @@ function MaintenanceContent() {
                       {isWorkOrderOverdue(wo) && <Badge tone="red">Overdue</Badge>}
                     </div>
                   </div>
-                  {wo.status === "completed" ? (
-                    <p className="mt-3 text-[11px] text-accent-green">Completed {wo.completedAt}</p>
-                  ) : (
-                    !isReadOnly && (
+                  {wo.status === "completed" && (
+                    <p className="mt-3 text-[11px] text-accent-green">
+                      Completed {wo.completedAt}
+                      {wo.completionNotes && <> — {wo.completionNotes}</>}
+                    </p>
+                  )}
+                  {wo.status === "cancelled" && (
+                    <p className="mt-3 text-[11px] text-text-muted">
+                      Cancelled by {wo.cancelledBy}
+                      {wo.cancelReason && <> — {wo.cancelReason}</>}
+                    </p>
+                  )}
+                  {(wo.status === "open" || wo.status === "in-progress") && !isReadOnly && (
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => advanceWorkOrder(wo)}
-                        className="mt-3 flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+                        className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" /> {wo.status === "open" ? "Start Work" : "Mark Complete"}
                       </button>
-                    )
+                      {session?.role === "Maintenance Manager / Reliability Manager" && (
+                        <button
+                          onClick={() => {
+                            setCancellingWo(wo);
+                            setCancelReason("");
+                          }}
+                          className="flex items-center gap-1.5 rounded-md border border-accent-red/40 px-2.5 py-1.5 text-[11px] font-medium text-accent-red transition-colors hover:bg-accent-red/10"
+                        >
+                          <Ban className="h-3.5 w-3.5" /> Cancel
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
@@ -722,6 +775,42 @@ function MaintenanceContent() {
           </div>
           <button type="submit" className="mt-1 rounded-md bg-accent-blue py-2.5 font-semibold text-white transition hover:brightness-90">
             Create Work Order
+          </button>
+        </form>
+      </Modal>
+
+      <Modal open={!!completingWo} onClose={() => setCompletingWo(null)} title="Complete Work Order">
+        <form onSubmit={confirmCompleteWorkOrder} className="flex flex-col gap-4 text-xs">
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Completion Notes (optional)</label>
+            <textarea
+              value={completionNotes}
+              onChange={(e) => setCompletionNotes(e.target.value)}
+              rows={3}
+              placeholder="What was actually done..."
+              className="w-full resize-none rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-muted focus:border-border-active focus:outline-none"
+            />
+          </div>
+          <button type="submit" className="mt-1 rounded-md bg-accent-blue py-2.5 font-semibold text-white transition hover:brightness-90">
+            Mark Complete
+          </button>
+        </form>
+      </Modal>
+
+      <Modal open={!!cancellingWo} onClose={() => setCancellingWo(null)} title="Cancel Work Order">
+        <form onSubmit={confirmCancelWorkOrder} className="flex flex-col gap-4 text-xs">
+          <div>
+            <label className="mb-1.5 block font-medium text-text-secondary">Reason (optional)</label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={3}
+              placeholder="Why is this being cancelled..."
+              className="w-full resize-none rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-muted focus:border-border-active focus:outline-none"
+            />
+          </div>
+          <button type="submit" className="mt-1 rounded-md bg-accent-red/15 py-2.5 font-semibold text-accent-red transition hover:bg-accent-red/25">
+            Confirm Cancellation
           </button>
         </form>
       </Modal>

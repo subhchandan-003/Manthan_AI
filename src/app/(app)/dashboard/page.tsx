@@ -31,6 +31,7 @@ import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { getRoleAccess, type DashboardWidget } from "@/lib/roles";
+import { formatDate } from "@/lib/dateFormat";
 import { alerts, documents, calendarEvents } from "@/lib/mock-data";
 import { incidentsForRole, openIncidents, STAGE_LABEL } from "@/lib/incidentWorkflow";
 
@@ -260,7 +261,7 @@ export default function DashboardPage() {
                   <span className={`h-2 w-2 rounded-full shrink-0 ${calStatusColor[c.status]}`} />
                   <span className="flex-1 truncate text-text-primary">{c.title}</span>
                   <span className="shrink-0 text-text-muted">
-                    {new Date(c.date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                    {formatDate(c.date)}
                   </span>
                 </div>
               ))}
@@ -325,7 +326,7 @@ export default function DashboardPage() {
                   <FileText className="h-4 w-4 shrink-0 text-accent-purple" strokeWidth={1.5} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs text-text-primary">{d.title}</p>
-                    <span className="text-[11px] text-text-muted">{d.uploadDate}</span>
+                    <span className="text-[11px] text-text-muted">{formatDate(d.uploadDate)}</span>
                   </div>
                   <Badge tone={docStatusTone[d.status]}>
                     {d.status === "indexed" ? "Processed ✓" : d.status === "processing" ? "Processing…" : "Needs Review"}
@@ -382,7 +383,7 @@ export default function DashboardPage() {
               <span className="flex-1 text-text-primary">{c.title}</span>
               <Badge tone={c.status === "overdue" ? "red" : c.status === "completed" ? "green" : "amber"}>{c.status}</Badge>
               <span className="shrink-0 text-text-muted">
-                {new Date(c.date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                {formatDate(c.date)}
               </span>
             </div>
           ))}

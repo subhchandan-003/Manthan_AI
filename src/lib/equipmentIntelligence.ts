@@ -14,6 +14,7 @@ import {
   documents,
   spareParts,
 } from "./mock-data";
+import { formatDate } from "./dateFormat";
 import type { EquipmentItem, WorkflowIncident } from "./types";
 import type { EvidenceCard, PdfContent, ExcelContent, WordContent } from "./documentViewer";
 
@@ -323,7 +324,7 @@ export function getEvidence(tag: string, workflowIncidents: WorkflowIncident[] =
         pageNumber: 1,
         heading: "1. General & Safety",
         paragraphs: [
-          `Original operating manual for ${e.oem}-supplied equipment of type "${e.type}". Commissioned ${e.commissionDate}.`,
+          `Original operating manual for ${e.oem}-supplied equipment of type "${e.type}". Commissioned ${formatDate(e.commissionDate)}.`,
           "Personnel qualification, safety symbols and consequences of non-compliance are detailed in Section 2 of this manual.",
         ],
       },
@@ -399,7 +400,7 @@ export function getEvidence(tag: string, workflowIncidents: WorkflowIncident[] =
     sections: [
       {
         heading: `Inspection Findings — ${e.tag}`,
-        paragraphs: inspections.map((i) => `${i.date} (Inspector: ${i.inspector}, Status: ${i.status}) — ${i.observations}`),
+        paragraphs: inspections.map((i) => `${formatDate(i.date)} (Inspector: ${i.inspector}, Status: ${i.status}) — ${i.observations}`),
       },
     ],
   };

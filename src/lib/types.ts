@@ -195,7 +195,7 @@ export interface WorkOrder {
   priority: "Low" | "Medium" | "High" | "Critical";
   /** Matches the Preventive/Corrective/Emergency taxonomy used in Analytics' cost breakdown. */
   type: "Preventive" | "Corrective" | "Emergency";
-  status: "open" | "in-progress" | "completed";
+  status: "open" | "in-progress" | "completed" | "cancelled";
   createdBy: string;
   /** "System" for auto-generated PM work orders raised off a nextPM due date. */
   createdByRole: Role | "System";
@@ -208,6 +208,11 @@ export interface WorkOrder {
   dueDate?: string;
   /** Spare part reserved against this job, by part number. */
   reservedPart?: string;
+  /** What was actually done — captured when marking the job complete. */
+  completionNotes?: string;
   completedAt?: string;
   completedAtTs?: number;
+  /** Who cancelled it and why, if it never went ahead. */
+  cancelledBy?: string;
+  cancelReason?: string;
 }

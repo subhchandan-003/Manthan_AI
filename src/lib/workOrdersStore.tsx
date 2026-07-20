@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { equipment } from "./mock-data";
+import { formatDateTime, formatDate } from "./dateFormat";
 import type { WorkOrder } from "./types";
 
 const STORAGE_KEY = "manthan-workorders-v1";
@@ -40,13 +41,13 @@ function generateDuePmWorkOrders(existing: WorkOrder[]): WorkOrder[] {
       woNumber: `WO-${Math.floor(10000 + Math.random() * 89999)}`,
       equipmentTag: e.tag,
       equipmentName: e.name,
-      description: `${PM_MARKER} — due ${e.nextPM}.`,
+      description: `${PM_MARKER} — due ${formatDate(e.nextPM)}.`,
       priority: e.health === "critical" ? "Critical" : e.health === "warning" ? "High" : "Medium",
       type: "Preventive",
       status: "open",
       createdBy: "MANTHAN",
       createdByRole: "System",
-      createdAt: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+      createdAt: formatDateTime(nowTs),
       createdAtTs: nowTs,
       dueDate: e.nextPM,
     });

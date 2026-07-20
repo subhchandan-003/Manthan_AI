@@ -30,6 +30,7 @@ import { DocumentViewerModal, type EvidenceItem } from "@/components/chat/Docume
 import { useSession } from "@/lib/session";
 import { useIncidents } from "@/lib/incidentsStore";
 import { useWorkOrders } from "@/lib/workOrdersStore";
+import { formatDateTime } from "@/lib/dateFormat";
 import { equipment, TECHNICIANS } from "@/lib/mock-data";
 import {
   STAGE_ORDER,
@@ -57,10 +58,6 @@ const stageTone: Record<IncidentStage, "neutral" | "blue" | "amber" | "green" | 
   "knowledge-saved": "green",
   closed: "green",
 };
-
-function now() {
-  return new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-}
 
 function IncidentsContent() {
   const { session } = useSession();
@@ -128,9 +125,9 @@ function IncidentsContent() {
       stage: "ai-investigation",
       raisedBy: actorName,
       raisedByRole: role,
-      createdAt: now(),
+      createdAt: formatDateTime(),
       attachments: [],
-      activityLog: [{ time: now(), actor: actorName, role, action: "Raised incident" }],
+      activityLog: [{ time: formatDateTime(), actor: actorName, role, action: "Raised incident" }],
     };
     addIncident(created);
     setSelectedId(id);

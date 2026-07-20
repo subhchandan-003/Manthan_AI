@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { useIncidents } from "@/lib/incidentsStore";
 import { downloadTextFile } from "@/lib/download";
+import { formatDate } from "@/lib/dateFormat";
 import {
   getEquipmentByTag,
   getDepartment,
@@ -226,9 +227,9 @@ export function EquipmentWorkspace({
           <HeaderStat label="Department" value={getDepartment(e)} />
           <HeaderStat label="Health Score" value={`${getHealthScore(e)}%`} />
           <HeaderStat label="Running Hours" value={e.runningHours.toLocaleString("en-IN")} />
-          <HeaderStat label="Last Maintenance" value={history[0]?.date ?? "—"} />
-          <HeaderStat label="Last Inspection" value={getLastInspectionDate(e)} />
-          <HeaderStat label="Commissioned" value={e.commissionDate} />
+          <HeaderStat label="Last Maintenance" value={history[0] ? formatDate(history[0].date) : "—"} />
+          <HeaderStat label="Last Inspection" value={formatDate(getLastInspectionDate(e))} />
+          <HeaderStat label="Commissioned" value={formatDate(e.commissionDate)} />
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
           <Link href="/pid-viewer" className="flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
@@ -342,7 +343,7 @@ export function EquipmentWorkspace({
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-text-primary">{h.description}</p>
                 <p className="mt-1 text-text-muted">
-                  {h.date} · {h.workOrderNo} · {h.performedBy} · {h.durationHrs}h
+                  {formatDate(h.date)} · {h.workOrderNo} · {h.performedBy} · {h.durationHrs}h
                 </p>
               </div>
               <Badge tone={h.type === "Emergency" ? "red" : h.type === "CM" ? "amber" : h.type === "Overhaul" ? "blue" : "green"}>{h.type}</Badge>
@@ -364,7 +365,7 @@ export function EquipmentWorkspace({
                   <div>
                     <p className="font-mono text-[11px] text-accent-cyan">{r.id}</p>
                     <p className="text-sm font-medium text-text-primary">{r.title}</p>
-                    <p className="mt-1 text-[11px] text-text-muted">{r.date}</p>
+                    <p className="mt-1 text-[11px] text-text-muted">{formatDate(r.date)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
                     <Badge tone={r.status === "closed" ? "green" : "amber"}>{r.status}</Badge>
@@ -380,7 +381,7 @@ export function EquipmentWorkspace({
                   </Link>
                   <button
                     onClick={() => {
-                      downloadTextFile(`${r.id}.txt`, `RCA ${r.id}\n${r.title}\n${r.date}\n\nRoot cause: ${r.rootCause}`);
+                      downloadTextFile(`${r.id}.txt`, `RCA ${r.id}\n${r.title}\n${formatDate(r.date)}\n\nRoot cause: ${r.rootCause}`);
                       toast.success("RCA downloaded");
                     }}
                     className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
@@ -432,7 +433,7 @@ export function EquipmentWorkspace({
             <div key={idx} className="flex flex-wrap items-start justify-between gap-2 border-b border-border-subtle pb-3 text-xs last:border-0 last:pb-0">
               <div className="min-w-0 flex-1">
                 <p className="text-text-primary">{i.observations}</p>
-                <p className="mt-1 text-text-muted">{i.date} · Inspector: {i.inspector}</p>
+                <p className="mt-1 text-text-muted">{formatDate(i.date)} · Inspector: {i.inspector}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge tone={i.status === "pass" ? "green" : i.status === "flagged" ? "amber" : "red"}>{i.status.replace("-", " ")}</Badge>
@@ -440,7 +441,7 @@ export function EquipmentWorkspace({
                   onClick={() =>
                     onOpenDocument({
                       id: `ev-inspect-${idx}`,
-                      name: `Inspection Report — ${i.date}.docx`,
+                      name: `Inspection Report — ${formatDate(i.date)}.docx`,
                       docType: "Word",
                       uploadDate: i.date,
                       relevance: 90,
@@ -453,7 +454,7 @@ export function EquipmentWorkspace({
                         kind: "word",
                         aiSectionIndex: 0,
                         aiParagraphIndex: 0,
-                        sections: [{ heading: `Inspection — ${i.date}`, paragraphs: [`Inspector: ${i.inspector} · Status: ${i.status}`, i.observations] }],
+                        sections: [{ heading: `Inspection — ${formatDate(i.date)}`, paragraphs: [`Inspector: ${i.inspector} · Status: ${i.status}`, i.observations] }],
                       },
                     })
                   }
@@ -491,7 +492,7 @@ export function EquipmentWorkspace({
                 {workOrders.map((w) => (
                   <tr key={w.id} className="border-t border-border-subtle bg-bg-secondary">
                     <td className="px-3 py-2.5 font-mono text-text-primary">{w.id}</td>
-                    <td className="px-3 py-2.5 text-text-secondary">{w.date}</td>
+                    <td className="px-3 py-2.5 text-text-secondary">{formatDate(w.date)}</td>
                     <td className="px-3 py-2.5 text-text-secondary">{w.description}</td>
                     <td className="px-3 py-2.5 text-text-secondary">{w.completedBy}</td>
                     <td className="px-3 py-2.5"><Badge tone="green">{w.status}</Badge></td>
@@ -550,7 +551,7 @@ export function EquipmentWorkspace({
                 <FileText className="h-4 w-4 shrink-0 text-accent-purple" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-text-primary">{ev.name}</p>
-                  <p className="text-[11px] text-text-muted">{ev.docType} · {ev.uploadDate}</p>
+                  <p className="text-[11px] text-text-muted">{ev.docType} · {formatDate(ev.uploadDate)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-[11px] text-text-secondary">

@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { UploadZone } from "@/components/documents/UploadZone";
 import { KnowledgeGraph } from "@/components/documents/KnowledgeGraph";
 import { downloadTextFile } from "@/lib/download";
+import { formatDate } from "@/lib/dateFormat";
 import { documents } from "@/lib/mock-data";
 import { DOCUMENT_CONTENT } from "@/lib/documentContent";
 import type { DocumentItem } from "@/lib/types";
@@ -80,7 +81,7 @@ Title: ${d.title}
 Type: ${d.type}
 Reference: ${d.docNo ?? "—"}
 Status: ${statusLabel[d.status]}
-Uploaded: ${d.uploadDate}
+Uploaded: ${formatDate(d.uploadDate)}
 ${d.tagsIdentified ? `Equipment tags identified: ${d.tagsIdentified}\n` : ""}${
       d.loopsMapped ? `Control loops mapped: ${d.loopsMapped}\n` : ""
     }`;
@@ -156,7 +157,7 @@ ${d.tagsIdentified ? `Equipment tags identified: ${d.tagsIdentified}\n` : ""}${
                       </p>
                     )}
                     {d.docNo && <p className="mt-1 font-mono text-[11px] text-text-muted">Ref: {d.docNo}</p>}
-                    <p className="mt-1 text-[11px] text-text-muted">Uploaded {d.uploadDate}</p>
+                    <p className="mt-1 text-[11px] text-text-muted">Uploaded {formatDate(d.uploadDate)}</p>
                   </div>
                 </div>
                 <div className="mt-4 flex gap-2 text-xs">
@@ -226,7 +227,7 @@ ${d.tagsIdentified ? `Equipment tags identified: ${d.tagsIdentified}\n` : ""}${
               )}
               <div className="flex justify-between gap-3">
                 <dt className="text-text-secondary">Uploaded</dt>
-                <dd className="text-text-primary">{previewDoc.uploadDate}</dd>
+                <dd className="text-text-primary">{formatDate(previewDoc.uploadDate)}</dd>
               </div>
               {previewDoc.tagsIdentified !== undefined && (
                 <div className="flex justify-between gap-3">

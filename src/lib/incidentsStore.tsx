@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { workflowIncidents as seedIncidents } from "./mock-data";
 import { deduplicateIncidents } from "./incidentWorkflow";
+import { formatDateTime } from "./dateFormat";
 import type { IncidentActivity, WorkflowIncident } from "./types";
 
 const STORAGE_KEY = "manthan-incidents-v1";
@@ -21,10 +22,6 @@ interface IncidentsContextValue {
 }
 
 const IncidentsContext = createContext<IncidentsContextValue | null>(null);
-
-function now() {
-  return new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-}
 
 export function IncidentsProvider({ children }: { children: React.ReactNode }) {
   const [incidents, setIncidents] = useState<WorkflowIncident[]>(seedIncidents);
@@ -70,7 +67,7 @@ export function IncidentsProvider({ children }: { children: React.ReactNode }) {
                 ...i,
                 ...patch,
                 stageEnteredAt: patch.stage ? { ...i.stageEnteredAt, [patch.stage]: Date.now() } : i.stageEnteredAt,
-                activityLog: [...i.activityLog, { ...activity, time: now() }],
+                activityLog: [...i.activityLog, { ...activity, time: formatDateTime() }],
               }
             : i
         )
