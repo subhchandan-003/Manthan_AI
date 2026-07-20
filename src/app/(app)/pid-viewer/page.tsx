@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { equipment as equipmentRegistry } from "@/lib/mock-data";
 import { downloadTextFile } from "@/lib/download";
+import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import { Modal } from "@/components/ui/Modal";
 
 interface PidNode {
@@ -61,6 +63,8 @@ const FLOW_PATHS = [
 ];
 
 export default function PidViewerPage() {
+  const { session } = useSession();
+  const canDownload = getRoleAccess(session?.role).canDownloadDocuments;
   const [zoom, setZoom] = useState(1);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [showFlow, setShowFlow] = useState(true);
@@ -179,12 +183,14 @@ export default function PidViewerPage() {
           >
             <BookOpen className="h-3.5 w-3.5" /> Legend
           </button>
-          <button
-            onClick={handleExport}
-            className="ml-auto flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:bg-bg-tertiary"
-          >
-            <Download className="h-3.5 w-3.5" /> Export
-          </button>
+          {canDownload && (
+            <button
+              onClick={handleExport}
+              className="ml-auto flex items-center gap-1 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:bg-bg-tertiary"
+            >
+              <Download className="h-3.5 w-3.5" /> Export
+            </button>
+          )}
         </div>
 
         {/* Canvas */}

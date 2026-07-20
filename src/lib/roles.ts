@@ -39,6 +39,13 @@ export interface RoleAccess {
   maintenance: AccessLevel;
   /** Safety & Compliance screen: what this role can see/do there */
   safety: AccessLevel;
+  /**
+   * Whether this role can export documents/reports out of the app (P&IDs, OEM manuals,
+   * RCA/compliance reports, equipment summaries). Everyone can still view them in-app —
+   * this only gates taking a copy outside the controlled system, since exported source
+   * documents can be confidential.
+   */
+  canDownloadDocuments: boolean;
   dashboardLayout: DashboardLayout;
 }
 
@@ -61,6 +68,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
+    canDownloadDocuments: false,
     dashboardLayout: {
       primary: ["shiftHandover", "activeAlerts", "incidents"],
       secondary: ["quickChat", "recentDocuments"],
@@ -70,6 +78,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "full",
     safety: "none",
+    canDownloadDocuments: false,
     dashboardLayout: {
       primary: ["incidents", "activeAlerts", "plantHealth"],
       secondary: ["quickChat", "maintenanceCalendar", "recentDocuments"],
@@ -79,6 +88,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "readonly",
     safety: "none",
+    canDownloadDocuments: true,
     dashboardLayout: {
       primary: ["incidents", "plantHealth", "activeAlerts"],
       secondary: ["quickChat", "maintenanceCalendar", "recentDocuments"],
@@ -88,6 +98,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "safety", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "none",
     safety: "full",
+    canDownloadDocuments: false,
     dashboardLayout: {
       primary: ["incidents", "safetyCompliance", "activeAlerts"],
       secondary: ["quickChat", "recentDocuments"],
@@ -97,6 +108,7 @@ export const ROLE_ACCESS: Record<Role, RoleAccess> = {
     nav: ["dashboard", "chat", "documents", "pid-viewer", "maintenance", "work-orders", "safety", "incidents", "knowledge", "analytics", "settings"],
     maintenance: "full",
     safety: "full",
+    canDownloadDocuments: true,
     dashboardLayout: {
       primary: ["incidents", "plantHealth", "activeAlerts", "safetyCompliance"],
       secondary: ["quickChat", "maintenanceCalendar", "shiftHandover", "recentDocuments"],

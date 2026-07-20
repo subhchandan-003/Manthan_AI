@@ -25,6 +25,8 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { useIncidents } from "@/lib/incidentsStore";
+import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import { downloadTextFile } from "@/lib/download";
 import { formatDate } from "@/lib/dateFormat";
 import {
@@ -131,6 +133,8 @@ export function EquipmentWorkspace({
 }) {
   const e = getEquipmentByTag(tag);
   const { incidents } = useIncidents();
+  const { session } = useSession();
+  const canDownload = getRoleAccess(session?.role).canDownloadDocuments;
   const [summary, setSummary] = useState<AiSummary | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [showReasoning, setShowReasoning] = useState(false);
@@ -379,15 +383,17 @@ export function EquipmentWorkspace({
                   <Link href="/incidents" className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
                     <Eye className="h-3.5 w-3.5" /> View RCA
                   </Link>
-                  <button
-                    onClick={() => {
-                      downloadTextFile(`${r.id}.txt`, `RCA ${r.id}\n${r.title}\n${formatDate(r.date)}\n\nRoot cause: ${r.rootCause}`);
-                      toast.success("RCA downloaded");
-                    }}
-                    className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Download PDF
-                  </button>
+                  {canDownload && (
+                    <button
+                      onClick={() => {
+                        downloadTextFile(`${r.id}.txt`, `RCA ${r.id}\n${r.title}\n${formatDate(r.date)}\n\nRoot cause: ${r.rootCause}`);
+                        toast.success("RCA downloaded");
+                      }}
+                      className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download PDF
+                    </button>
+                  )}
                 </div>
               </Card>
             ))}
@@ -410,15 +416,17 @@ export function EquipmentWorkspace({
                 <Link href="/documents" className="flex-1 rounded-md border border-border-subtle py-1.5 text-center font-medium text-text-primary hover:bg-bg-tertiary">
                   Open
                 </Link>
-                <button
-                  onClick={() => {
-                    downloadTextFile(`${s.category.replace(/\s+/g, "_")}.txt`, `${s.title}\nSource: ${s.docRef}`);
-                    toast.success("SOP downloaded");
-                  }}
-                  className="flex-1 rounded-md border border-border-subtle py-1.5 text-center font-medium text-text-primary hover:bg-bg-tertiary"
-                >
-                  Download
-                </button>
+                {canDownload && (
+                  <button
+                    onClick={() => {
+                      downloadTextFile(`${s.category.replace(/\s+/g, "_")}.txt`, `${s.title}\nSource: ${s.docRef}`);
+                      toast.success("SOP downloaded");
+                    }}
+                    className="flex-1 rounded-md border border-border-subtle py-1.5 text-center font-medium text-text-primary hover:bg-bg-tertiary"
+                  >
+                    Download
+                  </button>
+                )}
               </div>
             </div>
           ))}

@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { downloadTextFile, printToPdf, shareOrCopyLink } from "@/lib/download";
 import { formatDateTime, formatDate } from "@/lib/dateFormat";
+import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import {
   incidents,
   complianceRows,
@@ -64,6 +66,8 @@ const HAZARDS = [
 ];
 
 export default function SafetyPage() {
+  const { session } = useSession();
+  const canDownload = getRoleAccess(session?.role).canDownloadDocuments;
   const [tab, setTab] = useState<Tab>("hazard");
   const [checklists, setChecklists] = useState(INITIAL_CHECKLISTS);
   const [permits, setPermits] = useState(initialPermits);
@@ -181,9 +185,11 @@ export default function SafetyPage() {
                   <div className="h-full rounded-full bg-accent-green transition-all" style={{ width: `${(c.done / c.total) * 100}%` }} />
                 </div>
                 <div className="mt-4 flex gap-2 text-xs">
-                  <button onClick={printToPdf} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-bg-tertiary">
-                    <Download className="h-3.5 w-3.5" /> Download PDF
-                  </button>
+                  {canDownload && (
+                    <button onClick={printToPdf} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-bg-tertiary">
+                      <Download className="h-3.5 w-3.5" /> Download PDF
+                    </button>
+                  )}
                   <button onClick={() => shareChecklist(c.title)} className="flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-bg-tertiary">
                     <Share2 className="h-3.5 w-3.5" /> Share
                   </button>
@@ -276,11 +282,13 @@ export default function SafetyPage() {
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-end bg-bg-secondary px-4 py-3">
-              <button onClick={generateComplianceReport} className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3.5 py-2 text-xs font-semibold text-white transition hover:brightness-90">
-                <Download className="h-3.5 w-3.5" /> Generate Compliance Report
-              </button>
-            </div>
+            {canDownload && (
+              <div className="flex justify-end bg-bg-secondary px-4 py-3">
+                <button onClick={generateComplianceReport} className="flex items-center gap-1.5 rounded-md bg-accent-blue px-3.5 py-2 text-xs font-semibold text-white transition hover:brightness-90">
+                  <Download className="h-3.5 w-3.5" /> Generate Compliance Report
+                </button>
+              </div>
+            )}
           </div>
         )}
 

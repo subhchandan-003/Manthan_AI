@@ -12,6 +12,8 @@ import { UploadZone } from "@/components/documents/UploadZone";
 import { KnowledgeGraph } from "@/components/documents/KnowledgeGraph";
 import { downloadTextFile } from "@/lib/download";
 import { formatDate } from "@/lib/dateFormat";
+import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import { documents } from "@/lib/mock-data";
 import { DOCUMENT_CONTENT } from "@/lib/documentContent";
 import type { DocumentItem } from "@/lib/types";
@@ -47,6 +49,8 @@ const statusTone = { indexed: "green", processing: "amber", "needs-review": "red
 function DocumentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { session } = useSession();
+  const canDownload = getRoleAccess(session?.role).canDownloadDocuments;
   const [typeFilter, setTypeFilter] = useState<(typeof TYPES)[number]>("All");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -186,13 +190,15 @@ ${d.tagsIdentified ? `Equipment tags identified: ${d.tagsIdentified}\n` : ""}${
                   >
                     Analyze
                   </Link>
-                  <button
-                    onClick={() => handleDownload(d)}
-                    aria-label="Download"
-                    className="rounded-md border border-border-subtle px-2.5 py-2 text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                  </button>
+                  {canDownload && (
+                    <button
+                      onClick={() => handleDownload(d)}
+                      aria-label="Download"
+                      className="rounded-md border border-border-subtle px-2.5 py-2 text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -240,12 +246,14 @@ ${d.tagsIdentified ? `Equipment tags identified: ${d.tagsIdentified}\n` : ""}${
               {DOCUMENT_CONTENT[previewDoc.id] ?? "No extracted content available yet — this document is still processing."}
             </pre>
             <div className="mt-2 flex gap-2">
-              <button
-                onClick={() => handleDownload(previewDoc)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
-              >
-                <Download className="h-3.5 w-3.5" /> Download
-              </button>
+              {canDownload && (
+                <button
+                  onClick={() => handleDownload(previewDoc)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border-subtle py-2 text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download
+                </button>
+              )}
               <Link
                 href={`/chat?q=${encodeURIComponent(`Tell me about the document "${previewDoc.title}"`)}`}
                 onClick={() => setPreviewDoc(null)}

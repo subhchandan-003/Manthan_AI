@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/Badge";
 import { HealthDot } from "@/components/ui/HealthDot";
 import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/lib/session";
+import { getRoleAccess } from "@/lib/roles";
 import { useIncidents } from "@/lib/incidentsStore";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { downloadTextFile, shareOrCopyLink } from "@/lib/download";
@@ -67,6 +68,7 @@ type Tab = "sources" | "pid" | "equipment" | "history";
 function ChatContent() {
   const searchParams = useSearchParams();
   const { session } = useSession();
+  const canDownload = getRoleAccess(session?.role).canDownloadDocuments;
   const { incidents: workflowIncidents, addIncident, updateIncident } = useIncidents();
   const [input, setInput] = useState("");
   const handleVoice = useVoiceInput(setInput);
@@ -340,9 +342,11 @@ function ChatContent() {
       <button onClick={shareReport} className="flex items-center gap-2 rounded-md border border-border-subtle px-3 py-2 text-left text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
         <Share2 className="h-3.5 w-3.5" /> Share Report
       </button>
-      <button onClick={downloadSummary} className="flex items-center gap-2 rounded-md border border-border-subtle px-3 py-2 text-left text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
-        <Download className="h-3.5 w-3.5" /> Download Summary
-      </button>
+      {canDownload && (
+        <button onClick={downloadSummary} className="flex items-center gap-2 rounded-md border border-border-subtle px-3 py-2 text-left text-xs font-medium text-text-primary transition-colors hover:bg-bg-tertiary">
+          <Download className="h-3.5 w-3.5" /> Download Summary
+        </button>
+      )}
     </div>
     );
   }
